@@ -1,0 +1,516 @@
+{% extends "base.html" %}
+
+{% block title %}Settings{% endblock %}
+{% block page_title %}system configuration{% endblock %}
+
+{% block content %}
+<style>
+    /* ===== SETTINGS CONTAINER ===== */
+    .settings-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding-bottom: 5rem;
+        animation: fadeInUp 0.6s ease;
+    }
+
+    /* ===== SECTIONS ===== */
+    .settings-section {
+        background: var(--bg-elevated);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--border-soft);
+        border-radius: 24px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-md);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .settings-section:hover {
+        box-shadow: var(--shadow-xl);
+        border-color: var(--primary-light);
+        transform: translateY(-2px);
+    }
+
+    /* Section Header */
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-soft);
+    }
+
+    .header-icon {
+        width: 42px;
+        height: 42px;
+        background: var(--primary-soft);
+        color: var(--primary);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        box-shadow: 0 0 15px var(--primary-soft);
+    }
+
+    .section-header h3 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        letter-spacing: -0.01em;
+        margin: 0;
+        text-transform: uppercase;
+    }
+
+    /* ===== GRID LAYOUT ===== */
+    .settings-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 2rem;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+        .settings-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* ===== INPUT FIELDS ===== */
+    .setting-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+    }
+
+    .setting-item label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--text-tertiary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .setting-item input, .setting-item select {
+        padding: 0.9rem 1.2rem;
+        border: 1px solid var(--border-soft);
+        border-radius: 12px;
+        background: var(--bg-surface);
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        transition: all 0.2s ease;
+    }
+
+    .setting-item input:hover, .setting-item select:hover {
+        border-color: var(--border-medium);
+    }
+
+    .setting-item input:focus, .setting-item select:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px var(--primary-soft);
+        background: var(--bg-card);
+    }
+
+    /* API Key Input Group */
+    .api-key-input {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .api-key-input input {
+        width: 100%;
+        padding-right: 3.5rem; /* Space for the button */
+    }
+
+    .btn-reveal {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-soft);
+        color: var(--text-secondary);
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-reveal:hover {
+        color: var(--primary);
+        border-color: var(--primary);
+        background: var(--primary-soft);
+    }
+
+    /* ===== TOGGLE SWITCHES ===== */
+    .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+    }
+
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 52px;
+        height: 28px;
+    }
+
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: var(--bg-surface);
+        border: 1px solid var(--border-medium);
+        transition: .3s;
+        border-radius: 34px;
+    }
+
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 3px;
+        bottom: 3px;
+        background-color: var(--text-tertiary);
+        transition: .3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        border-radius: 50%;
+    }
+
+    input:checked + .toggle-slider {
+        background-color: var(--primary);
+        border-color: var(--primary);
+    }
+
+    input:checked + .toggle-slider:before {
+        transform: translateX(24px);
+        background-color: white;
+        box-shadow: 0 0 10px rgba(255,255,255,0.6);
+    }
+
+    /* ===== FLOATING SAVE BAR ===== */
+    .save-bar {
+        position: fixed;
+        bottom: 2rem;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90%;
+        max-width: 800px;
+        background: rgba(15, 23, 42, 0.85); /* Dark blur for contrast */
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 20px;
+        padding: 1rem 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        z-index: 1000;
+        animation: slideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.5s backwards;
+    }
+
+    @keyframes slideUp {
+        from { opacity: 0; transform: translate(-50%, 20px); }
+        to { opacity: 1; transform: translate(-50%, 0); }
+    }
+
+    .save-status {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        color: #e2e8f0; /* Always light text for save bar */
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .save-status i {
+        color: var(--success);
+        filter: drop-shadow(0 0 5px var(--success));
+    }
+
+    .btn-save {
+        background: var(--gradient-primary);
+        color: white;
+        border: none;
+        padding: 0.8rem 2.5rem;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 8px 20px -5px var(--primary);
+    }
+
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 15px 30px -5px var(--primary);
+    }
+</style>
+
+<div class="settings-container">
+    
+    <div class="settings-section">
+        <div class="section-header">
+            <div class="header-icon"><i class="fas fa-user-circle"></i></div>
+            <h3>profile settings</h3>
+        </div>
+        
+        <div class="settings-grid">
+            <div class="setting-item">
+                <label>full name</label>
+                <input type="text" value="Prajwal" placeholder="Enter your name">
+            </div>
+            <div class="setting-item">
+                <label>email address</label>
+                <input type="email" value="prajwal@klodev.com" placeholder="name@company.com">
+            </div>
+            <div class="setting-item">
+                <label>company workspace</label>
+                <input type="text" value="Klodev Nexus" readonly style="opacity: 0.7; cursor: not-allowed;">
+            </div>
+            <div class="setting-item">
+                <label>access role</label>
+                <select>
+                    <option value="admin">System Admin</option>
+                    <option value="editor" selected>Marketing Manager</option>
+                    <option value="viewer">Viewer</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <div class="section-header">
+            <div class="header-icon"><i class="fas fa-link"></i></div>
+            <h3>api integrations</h3>
+        </div>
+        
+        <div class="settings-grid">
+            <div class="setting-item">
+                <label>gemini ai key</label>
+                <div class="api-key-input">
+                    <input type="password" value="sk-proj-8392019283..." id="geminiKey">
+                    <button class="btn-reveal" onclick="toggleVisibility('geminiKey')">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="setting-item">
+                <label>linkedin client id</label>
+                <input type="text" value="86abc123-456d-789e">
+            </div>
+            <div class="setting-item">
+                <label>linkedin client secret</label>
+                <div class="api-key-input">
+                    <input type="password" value="78s8d78s7d8s7d8s" id="linkedinSecret">
+                    <button class="btn-reveal" onclick="toggleVisibility('linkedinSecret')">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="setting-item">
+                <label>bland.ai voice key</label>
+                <div class="api-key-input">
+                    <input type="password" value="sk-bland-928374..." id="blandKey">
+                    <button class="btn-reveal" onclick="toggleVisibility('blandKey')">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <div class="section-header">
+            <div class="header-icon"><i class="fas fa-paper-plane"></i></div>
+            <h3>email configuration</h3>
+        </div>
+        
+        <div class="settings-grid">
+            <div class="setting-item">
+                <label>smtp server</label>
+                <input type="text" value="smtp.gmail.com">
+            </div>
+            <div class="setting-item">
+                <label>smtp port</label>
+                <input type="text" value="587">
+            </div>
+            <div class="setting-item">
+                <label>sender email</label>
+                <input type="email" value="klodevtest@gmail.com">
+            </div>
+            <div class="setting-item">
+                <label>app password</label>
+                <div class="api-key-input">
+                    <input type="password" value="xkdi-dkek-skej-dieks" id="emailPassword">
+                    <button class="btn-reveal" onclick="toggleVisibility('emailPassword')">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <div class="section-header">
+            <div class="header-icon"><i class="fas fa-sliders-h"></i></div>
+            <h3>system preferences</h3>
+        </div>
+        
+        <div class="settings-grid">
+            <div class="toggle-row">
+                <div class="setting-item">
+                    <label style="margin:0; font-size: 0.95rem; color: var(--text-primary);">Email Notifications</label>
+                    <span style="font-size: 0.8rem; color: var(--text-tertiary);">Receive daily digests</span>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="toggle-row">
+                <div class="setting-item">
+                    <label style="margin:0; font-size: 0.95rem; color: var(--text-primary);">Campaign Alerts</label>
+                    <span style="font-size: 0.8rem; color: var(--text-tertiary);">Notify on completion</span>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="toggle-row">
+                <div class="setting-item">
+                    <label style="margin:0; font-size: 0.95rem; color: var(--text-primary);">Error Reporting</label>
+                    <span style="font-size: 0.8rem; color: var(--text-tertiary);">Send crash logs</span>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="toggle-row">
+                <div class="setting-item">
+                    <label style="margin:0; font-size: 0.95rem; color: var(--text-primary);">Auto-Scaling</label>
+                    <span style="font-size: 0.8rem; color: var(--text-tertiary);">Dynamic resource alloc</span>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <div class="section-header">
+            <div class="header-icon"><i class="fas fa-shield-alt"></i></div>
+            <h3>security & governance</h3>
+        </div>
+        
+        <div class="settings-grid">
+            <div class="toggle-row">
+                <div class="setting-item">
+                    <label style="margin:0; font-size: 0.95rem; color: var(--text-primary);">2FA Authentication</label>
+                    <span style="font-size: 0.8rem; color: var(--text-tertiary);">Require for all logins</span>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="toggle-row">
+                <div class="setting-item">
+                    <label style="margin:0; font-size: 0.95rem; color: var(--text-primary);">Audit Logging</label>
+                    <span style="font-size: 0.8rem; color: var(--text-tertiary);">Track all user actions</span>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="setting-item">
+                <label>session timeout (minutes)</label>
+                <input type="number" value="30">
+            </div>
+            
+            <div class="setting-item">
+                <label>password expiry (days)</label>
+                <input type="number" value="90">
+            </div>
+        </div>
+    </div>
+
+    <div class="save-bar">
+        <div class="save-status">
+            <i class="fas fa-check-circle"></i>
+            <span>System configuration synced locally</span>
+        </div>
+        <button class="btn-save" onclick="saveSettings()">
+            Save Changes
+        </button>
+    </div>
+
+</div>
+
+<script>
+    function toggleVisibility(inputId) {
+        const input = document.getElementById(inputId);
+        const icon = input.nextElementSibling.querySelector('i');
+        
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+
+    function saveSettings() {
+        // Simulate save
+        const btn = document.querySelector('.btn-save');
+        const originalText = btn.innerHTML;
+        
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        btn.style.opacity = '0.8';
+        
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.style.opacity = '1';
+            showToast('Settings saved successfully', 'success');
+        }, 800);
+    }
+
+    // Override quick workflow function
+    window.runQuickWorkflow = function() {
+        saveSettings();
+    };
+</script>
+{% endblock %}

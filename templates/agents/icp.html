@@ -1,0 +1,808 @@
+{% extends "base.html" %}
+
+{% block title %}ICP Module{% endblock %}
+{% block page_title %}agent 2 · icp module{% endblock %}
+
+{% block content %}
+<style>
+    .agent-layout {
+        display: grid;
+        grid-template-columns: 380px 1fr;
+        gap: 2rem;
+        height: calc(100vh - 140px);
+    }
+
+    .input-panel {
+        background: var(--bg-card);
+        border: 1px solid var(--border-soft);
+        border-radius: 28px;
+        padding: 1.8rem;
+        overflow-y: auto;
+        animation: slideInLeft 0.5s var(--ease-out-expo);
+        box-shadow: var(--shadow-md);
+        position: relative;
+        backdrop-filter: blur(20px);
+    }
+
+    .input-panel::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 28px;
+        padding: 2px;
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        pointer-events: none;
+        opacity: 0.3;
+    }
+
+    .panel-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--text-secondary);
+        margin-bottom: 1.8rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        letter-spacing: -0.01em;
+    }
+
+    .panel-title i {
+        color: var(--primary);
+        font-size: 1.3rem;
+        filter: drop-shadow(0 0 10px var(--primary));
+    }
+
+    .form-group {
+        margin-bottom: 1.8rem;
+        animation: fadeInUp 0.5s var(--ease-out-expo);
+        animation-fill-mode: both;
+    }
+
+    .form-group:nth-child(2) { animation-delay: 0.1s; }
+    .form-group:nth-child(3) { animation-delay: 0.15s; }
+    .form-group:nth-child(4) { animation-delay: 0.2s; }
+    .form-group:nth-child(5) { animation-delay: 0.25s; }
+
+    .form-group label {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--text-tertiary);
+        margin-bottom: 0.6rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .form-group label i {
+        color: var(--primary);
+        font-size: 0.9rem;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.9rem 1.2rem;
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-soft);
+        border-radius: 16px;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        transition: all 0.3s var(--ease-bounce);
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 5px rgba(37, 99, 235, 0.15), 0 0 20px rgba(37, 99, 235, 0.2);
+        background: var(--bg-card);
+        transform: scale(1.02);
+    }
+
+    select.form-control {
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 1rem center;
+        background-size: 16px;
+    }
+
+    textarea.form-control {
+        resize: vertical;
+        min-height: 100px;
+        line-height: 1.6;
+    }
+
+    .results-panel {
+        background: var(--bg-card);
+        border: 1px solid var(--border-soft);
+        border-radius: 28px;
+        padding: 1.8rem;
+        overflow-y: auto;
+        animation: slideInRight 0.5s var(--ease-out-expo);
+        box-shadow: var(--shadow-md);
+        position: relative;
+        backdrop-filter: blur(20px);
+    }
+
+    .results-panel::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 28px;
+        padding: 2px;
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        pointer-events: none;
+        opacity: 0.3;
+    }
+
+    .agent-status {
+        display: flex;
+        align-items: center;
+        gap: 1.2rem;
+        padding: 1.2rem 1.5rem;
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(6, 182, 212, 0.05));
+        border-radius: 18px;
+        margin-bottom: 2rem;
+        border: 1px solid rgba(37, 99, 235, 0.2);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .agent-status::before {
+        content: '';
+        position: absolute;
+        width: 100px;
+        height: 100px;
+        background: var(--primary);
+        filter: blur(50px);
+        opacity: 0.2;
+        top: -20px;
+        right: -20px;
+        animation: pulseGlow 3s infinite;
+    }
+
+    .agent-indicator {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3), 0 0 20px var(--primary);
+        animation: pulse 2s infinite;
+    }
+
+    .agent-status span {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 1rem;
+    }
+
+    /* ICP Cards */
+    .icp-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-top: 1.5rem;
+    }
+
+    .icp-card {
+        background: linear-gradient(135deg, var(--bg-elevated), rgba(37, 99, 235, 0.03));
+        border-radius: 24px;
+        padding: 1.8rem;
+        border: 1px solid var(--border-soft);
+        border-left: 5px solid var(--primary);
+        transition: all 0.4s var(--ease-bounce);
+        animation: fadeInUp 0.5s var(--ease-out-expo);
+        animation-fill-mode: both;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .icp-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 100%;
+        background: radial-gradient(800px circle at var(--x, 50%) var(--y, 50%), rgba(37, 99, 235, 0.1), transparent 50%);
+        opacity: 0;
+        transition: opacity 0.3s;
+        pointer-events: none;
+    }
+
+    .icp-card:hover::before {
+        opacity: 1;
+    }
+
+    .icp-card:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 20px 40px -12px rgba(37, 99, 235, 0.3);
+        border-color: var(--primary);
+    }
+
+    .icp-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+
+    .icp-name {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        letter-spacing: -0.02em;
+    }
+
+    .icp-score {
+        padding: 0.3rem 1rem;
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+        color: white;
+        border-radius: 40px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        box-shadow: 0 5px 15px -5px var(--primary);
+    }
+
+    .icp-role {
+        font-size: 0.95rem;
+        color: var(--text-secondary);
+        margin-bottom: 1.2rem;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+
+    .icp-role i {
+        color: var(--primary);
+        font-size: 0.8rem;
+    }
+
+    .icp-details {
+        margin: 1.2rem 0;
+        padding: 1rem 0;
+        border-top: 1px dashed var(--border-soft);
+        border-bottom: 1px dashed var(--border-soft);
+    }
+
+    .detail-row {
+        display: flex;
+        margin-bottom: 0.6rem;
+        font-size: 0.9rem;
+    }
+
+    .detail-label {
+        width: 100px;
+        color: var(--text-tertiary);
+        font-weight: 500;
+    }
+
+    .detail-value {
+        flex: 1;
+        color: var(--text-primary);
+        font-weight: 600;
+    }
+
+    .pain-points {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin: 1rem 0;
+    }
+
+    .pain-tag {
+        padding: 0.3rem 1rem;
+        background: rgba(37, 99, 235, 0.1);
+        border: 1px solid rgba(37, 99, 235, 0.2);
+        border-radius: 40px;
+        font-size: 0.8rem;
+        color: var(--primary);
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+
+    .pain-tag:hover {
+        background: var(--primary);
+        color: white;
+        transform: scale(1.05);
+    }
+
+    .channel-preference {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.4rem 1.2rem;
+        background: linear-gradient(135deg, var(--primary-soft), rgba(6, 182, 212, 0.1));
+        color: var(--primary);
+        border-radius: 40px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        border: 1px solid rgba(37, 99, 235, 0.2);
+    }
+
+    .channel-preference i {
+        color: var(--accent);
+    }
+
+    .execute-button {
+        width: 100%;
+        padding: 1.2rem;
+        background: linear-gradient(135deg, var(--primary), var(--accent), var(--primary-dark));
+        background-size: 200% 200%;
+        color: white;
+        border: none;
+        border-radius: 40px;
+        font-weight: 700;
+        font-size: 1.1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        transition: all 0.4s var(--ease-bounce);
+        margin-top: 2rem;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 20px 30px -10px var(--primary);
+        animation: gradientShift 4s infinite alternate;
+    }
+
+    @keyframes gradientShift {
+        0% { background-position: 0% 0%; }
+        100% { background-position: 100% 100%; }
+    }
+
+    .execute-button::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.3);
+        transition: width 0.6s, height 0.6s;
+    }
+
+    .execute-button:hover::before {
+        width: 300px;
+        height: 300px;
+    }
+
+    .execute-button:hover {
+        transform: translateY(-4px) scale(1.02);
+        box-shadow: 0 30px 40px -12px var(--primary);
+    }
+
+    .execute-button i {
+        transition: transform 0.3s;
+    }
+
+    .execute-button:hover i {
+        transform: translateX(5px);
+    }
+
+    .selected-icp {
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(6, 182, 212, 0.05));
+        border: 2px solid var(--primary);
+        padding: 2rem;
+        border-radius: 32px;
+        margin: 1.5rem 0 2rem;
+        position: relative;
+        overflow: hidden;
+        animation: glowPulse 3s infinite;
+    }
+
+    @keyframes glowPulse {
+        0%, 100% { box-shadow: 0 0 20px rgba(37, 99, 235, 0.2); }
+        50% { box-shadow: 0 0 40px rgba(37, 99, 235, 0.4); }
+    }
+
+    .selected-header {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        color: var(--primary);
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        font-size: 1.1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .selected-header i {
+        font-size: 1.5rem;
+        filter: drop-shadow(0 0 10px var(--primary));
+    }
+
+    .crown-icon {
+        color: #fbbf24;
+        filter: drop-shadow(0 0 10px #fbbf24);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        background: var(--bg-elevated);
+        padding: 1.5rem;
+        border-radius: 24px;
+        margin-top: 1rem;
+    }
+
+    .stat-item {
+        text-align: center;
+    }
+
+    .stat-label {
+        font-size: 0.7rem;
+        color: var(--text-tertiary);
+        margin-bottom: 0.3rem;
+    }
+
+    .stat-value {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .audit-log {
+        margin-top: 2rem;
+        padding: 1.2rem;
+        background: #ffffff;
+        border-radius: 20px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.8rem;
+        color: var(--primary-dark);
+        border: 1px solid var(--border-soft);
+        box-shadow: inset 0 0 20px rgba(37, 99, 235, 0.05);
+    }
+
+    [data-theme="dark"] .audit-log {
+        background: #0a0f1f;
+        color: var(--success);
+        border: 1px solid rgba(37, 99, 235, 0.2);
+    }
+
+    .audit-entry {
+        padding: 0.8rem;
+        border-left: 3px solid var(--primary);
+        margin-bottom: 0.8rem;
+        background: rgba(37, 99, 235, 0.03);
+        border-radius: 12px;
+        animation: slideInRight 0.3s var(--ease-out-expo);
+        font-family: 'Plus Jakarta Sans', monospace;
+    }
+
+    .loader-container {
+        background: rgba(37, 99, 235, 0.05);
+        padding: 2rem;
+        border-radius: 40px;
+        border: 1px dashed var(--primary);
+    }
+
+    /* Custom scrollbar */
+    .results-panel::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .results-panel::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .results-panel::-webkit-scrollbar-thumb {
+        background: var(--primary);
+        border-radius: 4px;
+    }
+
+    /* Empty state */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--text-tertiary);
+        animation: fadeInUp 0.5s;
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        color: var(--primary);
+        opacity: 0.3;
+        margin-bottom: 1.5rem;
+        animation: float 3s infinite;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+
+    /* Light theme specific adjustments */
+    [data-theme="light"] .icp-card {
+        background: white;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.05);
+    }
+
+    [data-theme="light"] .agent-status {
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.05), rgba(6, 182, 212, 0.02));
+    }
+
+    [data-theme="light"] .audit-log {
+        background: #f8fafc;
+    }
+</style>
+
+<div class="agent-layout">
+    <!-- Input Panel -->
+    <div class="input-panel">
+        <div class="panel-title">
+            <i class="fas fa-users"></i>
+            icp analysis parameters
+        </div>
+
+        <div class="form-group">
+            <label><i class="fas fa-tag"></i> classification category</label>
+            <input type="text" class="form-control" id="category" value="Enterprise SaaS Outreach" placeholder="e.g., Enterprise SaaS Outreach">
+        </div>
+
+        <div class="form-group">
+            <label><i class="fas fa-building"></i> target industry</label>
+            <select class="form-control" id="industry">
+                <option value="saas">SaaS / Technology</option>
+                <option value="fintech">Fintech</option>
+                <option value="healthcare">Healthcare</option>
+                <option value="manufacturing">Manufacturing</option>
+                <option value="ecommerce">E-commerce</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label><i class="fas fa-chart-line"></i> company size</label>
+            <select class="form-control" id="companySize">
+                <option value="startup">Startup (1-50)</option>
+                <option value="sme">SME (51-500)</option>
+                <option value="enterprise" selected>Enterprise (500+)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label><i class="fas fa-pen"></i> additional context</label>
+            <textarea class="form-control" id="context" rows="3">Focus on C-level executives interested in digital transformation and AI analytics</textarea>
+        </div>
+
+        <button class="execute-button" onclick="analyzeICP()" id="analyzeBtn">
+            <i class="fas fa-search"></i>
+            analyze icp profiles
+            <i class="fas fa-arrow-right"></i>
+        </button>
+
+        <div class="loader-container" id="loader" style="display: none; text-align: center; margin-top: 1rem;">
+            <div class="loading-spinner" style="margin: 0 auto; border-top-color: var(--primary);"></div>
+            <p style="color: var(--text-tertiary); margin-top: 1rem;">agent 2 is matching profiles...</p>
+        </div>
+    </div>
+
+    <!-- Results Panel -->
+    <div class="results-panel">
+        <div class="panel-title">
+            <i class="fas fa-chart-bar"></i>
+            icp analysis results
+        </div>
+
+        <div class="agent-status">
+            <div class="agent-indicator"></div>
+            <span>agent 2 · ideal customer profile matching</span>
+        </div>
+
+        <div id="results">
+            <div class="empty-state">
+                <i class="fas fa-users"></i>
+                <p>enter parameters and run icp analysis</p>
+                <p style="font-size: 0.9rem; margin-top: 0.5rem;">agent 2 will identify your ideal customer profiles</p>
+            </div>
+        </div>
+
+        <div class="audit-log" id="auditLog">
+            <div class="audit-entry">
+                <div style="color: var(--primary); display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-shield-alt"></i> agent 2 · standby mode
+                </div>
+                <div style="color: var(--text-tertiary); font-size: 0.7rem; margin-top: 0.3rem;">awaiting icp analysis task...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Spotlight effect for ICP cards
+    document.addEventListener('mousemove', (e) => {
+        if (e.target.closest('.icp-card')) {
+            const card = e.target.closest('.icp-card');
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            card.style.setProperty('--x', x + 'px');
+            card.style.setProperty('--y', y + 'px');
+        }
+    });
+
+    async function analyzeICP() {
+        const btn = document.getElementById('analyzeBtn');
+        const loader = document.getElementById('loader');
+        const results = document.getElementById('results');
+        const auditLog = document.getElementById('auditLog');
+        
+        btn.style.display = 'none';
+        loader.style.display = 'block';
+        
+        results.innerHTML = `
+            <div style="text-align: center; padding: 3rem;">
+                <div class="loading-spinner" style="margin: 0 auto; width: 40px; height: 40px; border-top-color: var(--primary);"></div>
+                <p style="color: var(--text-tertiary); margin-top: 1.5rem;">agent 2 is analyzing ideal customer profiles...</p>
+                <p style="color: var(--text-tertiary); font-size: 0.8rem;">scanning firmographic databases</p>
+            </div>
+        `;
+
+        // Simulate API call
+        setTimeout(() => {
+            const mockICPs = [
+                {
+                    name: "Tech Decision Maker",
+                    role: "CTO / VP Engineering",
+                    industry: "SaaS / Technology",
+                    company_size: "500-5000",
+                    score: 95,
+                    pain_points: ["Legacy system integration", "Scalability", "Security compliance"],
+                    channels: ["linkedin", "email"],
+                    engagement: "Very High"
+                },
+                {
+                    name: "Enterprise IT Leader",
+                    role: "CIO / IT Director",
+                    industry: "Enterprise / Manufacturing",
+                    company_size: "5000+",
+                    score: 88,
+                    pain_points: ["Digital transformation", "Cost reduction", "Process optimization"],
+                    channels: ["email", "call"],
+                    engagement: "High"
+                },
+                {
+                    name: "Startup Founder",
+                    role: "CEO / Founder",
+                    industry: "Fintech / Healthtech",
+                    company_size: "10-50",
+                    score: 76,
+                    pain_points: ["Time to market", "Resource constraints", "Funding"],
+                    channels: ["call", "linkedin"],
+                    engagement: "Medium"
+                },
+                {
+                    name: "Marketing Executive",
+                    role: "CMO / Head of Marketing",
+                    industry: "E-commerce / DTC",
+                    company_size: "100-1000",
+                    score: 72,
+                    pain_points: ["Customer acquisition", "ROI measurement", "Channel optimization"],
+                    channels: ["linkedin", "email"],
+                    engagement: "Medium"
+                }
+            ];
+
+            results.innerHTML = `
+                <div class="selected-icp">
+                    <div class="selected-header">
+                        <i class="fas fa-crown crown-icon"></i>
+                        <span>primary icp · highest priority match</span>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+                        <div>
+                            <div style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em;">${mockICPs[0].name}</div>
+                            <div style="color: var(--text-secondary); display: flex; align-items: center; gap: 0.3rem; margin-top: 0.2rem;">
+                                <i class="fas fa-briefcase" style="color: var(--primary);"></i> ${mockICPs[0].role}
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 2.5rem; font-weight: 800; color: var(--primary); line-height: 1;">${mockICPs[0].score}</div>
+                            <div style="font-size: 0.8rem; color: var(--text-tertiary);">match score</div>
+                        </div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-label">industry</div>
+                            <div class="stat-value">${mockICPs[0].industry.split('/')[0]}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">company size</div>
+                            <div class="stat-value">${mockICPs[0].company_size}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">engagement</div>
+                            <div class="stat-value" style="color: var(--success);">${mockICPs[0].engagement}</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        ${mockICPs[0].pain_points.map(p => `<span class="pain-tag" style="background: rgba(37,99,235,0.15);">${p}</span>`).join('')}
+                    </div>
+                </div>
+
+                <div class="icp-grid">
+                    ${mockICPs.slice(1).map((icp, index) => `
+                        <div class="icp-card" style="animation-delay: ${index * 0.1}s" onmousemove="updateSpotlight(event, this)">
+                            <div class="icp-header">
+                                <span class="icp-name">${icp.name}</span>
+                                <span class="icp-score">${icp.score}%</span>
+                            </div>
+                            <div class="icp-role">
+                                <i class="fas fa-user-tie"></i> ${icp.role}
+                            </div>
+                            <div class="icp-details">
+                                <div class="detail-row">
+                                    <span class="detail-label">Industry:</span>
+                                    <span class="detail-value">${icp.industry}</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">Company:</span>
+                                    <span class="detail-value">${icp.company_size}</span>
+                                </div>
+                            </div>
+                            <div class="pain-points">
+                                ${icp.pain_points.map(p => `<span class="pain-tag">${p}</span>`).join('')}
+                            </div>
+                            <div style="margin-top: 1rem;">
+                                <span class="channel-preference">
+                                    <i class="fas ${icp.channels.includes('email') ? 'fa-envelope' : icp.channels.includes('call') ? 'fa-phone' : 'fa-linkedin'}"></i>
+                                    prefers ${icp.channels.join(' / ')}
+                                </span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            // Update audit log
+            const timestamp = new Date().toLocaleTimeString();
+            const newAudit = `
+                <div class="audit-entry">
+                    <div style="color: var(--primary); display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-shield-alt"></i> agent 2 · ${timestamp}
+                    </div>
+                    <div style="margin: 0.3rem 0;">icp analysis complete · found ${mockICPs.length} profiles</div>
+                    <div style="color: var(--text-tertiary); font-size: 0.7rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-hashtag"></i> hash: ${Math.random().toString(36).substring(7)}
+                        <i class="fas fa-check-circle" style="color: var(--success); margin-left: auto;"></i>
+                    </div>
+                </div>
+            `;
+            auditLog.innerHTML = newAudit + auditLog.innerHTML;
+
+            btn.style.display = 'flex';
+            loader.style.display = 'none';
+            
+            showToast('ICP analysis completed successfully', 'success');
+        }, 2800);
+    }
+
+    function updateSpotlight(event, card) {
+        const rect = card.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        card.style.setProperty('--x', x + 'px');
+        card.style.setProperty('--y', y + 'px');
+    }
+
+    // Override quick workflow function
+    window.runQuickWorkflow = function() {
+        analyzeICP();
+    };
+</script>
+{% endblock %}

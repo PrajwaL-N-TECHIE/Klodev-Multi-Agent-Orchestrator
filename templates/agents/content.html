@@ -1,0 +1,659 @@
+{% extends "base.html" %}
+
+{% block title %}Content Generation{% endblock %}
+{% block page_title %}agent 3 · content engine{% endblock %}
+
+{% block content %}
+<style>
+    /* ===== LAYOUT ===== */
+    .agent-layout {
+        display: grid;
+        grid-template-columns: 420px 1fr;
+        gap: 2.5rem;
+        height: calc(100vh - 140px);
+        animation: fadeInUp 0.6s ease;
+    }
+
+    /* ===== INPUT PANEL (GLASS) ===== */
+    .input-panel {
+        background: var(--bg-elevated);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid var(--border-soft);
+        border-radius: 24px;
+        padding: 2rem;
+        overflow-y: auto;
+        box-shadow: var(--shadow-lg);
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .panel-title {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        border-bottom: 1px solid var(--border-soft);
+        padding-bottom: 1rem;
+    }
+
+    .panel-title i {
+        color: var(--primary);
+        font-size: 1.2rem;
+        filter: drop-shadow(0 0 8px var(--primary-glow));
+    }
+
+    /* Form Fields */
+    .form-group label {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--text-tertiary);
+        margin-bottom: 0.6rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 1rem 1.2rem;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-soft);
+        border-radius: 14px;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px var(--primary-soft);
+        background: var(--bg-card);
+    }
+
+    textarea.form-control {
+        resize: none;
+        min-height: 110px;
+        line-height: 1.6;
+    }
+
+    /* Tone Selector */
+    .tone-selector {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.8rem;
+    }
+
+    .tone-option {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-soft);
+        border-radius: 12px;
+        padding: 0.8rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .tone-option i {
+        display: block;
+        font-size: 1.2rem;
+        margin-bottom: 0.4rem;
+        color: var(--text-tertiary);
+        transition: 0.2s;
+    }
+
+    .tone-option span {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+    }
+
+    .tone-option:hover {
+        border-color: var(--primary-light);
+        transform: translateY(-2px);
+    }
+
+    .tone-option.selected {
+        background: var(--primary-soft);
+        border-color: var(--primary);
+        box-shadow: 0 0 15px var(--primary-soft);
+    }
+
+    .tone-option.selected i,
+    .tone-option.selected span {
+        color: var(--primary);
+    }
+
+    /* Execute Button */
+    .btn-execute {
+        width: 100%;
+        padding: 1rem;
+        background: var(--gradient-primary);
+        color: white;
+        border: none;
+        border-radius: 16px;
+        font-weight: 700;
+        font-size: 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.8rem;
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        box-shadow: 0 10px 25px -5px var(--primary-glow);
+        margin-top: auto;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-execute::before {
+        content: '';
+        position: absolute;
+        top: 0; left: -100%;
+        width: 100%; height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: 0.5s;
+    }
+
+    .btn-execute:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 20px 35px -8px var(--primary-glow);
+    }
+
+    .btn-execute:hover::before {
+        left: 100%;
+    }
+
+    .btn-execute:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    /* ===== RESULTS PANEL ===== */
+    .results-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        overflow-y: auto;
+        padding-right: 0.5rem;
+    }
+
+    /* Agent Status Bar */
+    .agent-monitor {
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-soft);
+        border-radius: 16px;
+        padding: 1rem 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .status-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--text-primary);
+    }
+
+    .pulse-dot {
+        width: 10px; height: 10px;
+        background: var(--success);
+        border-radius: 50%;
+        box-shadow: 0 0 10px var(--success);
+        animation: pulseGreen 2s infinite;
+    }
+
+    @keyframes pulseGreen {
+        0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+        70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    /* Content Card */
+    .content-card {
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-soft);
+        border-radius: 20px;
+        position: relative;
+        overflow: hidden;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        box-shadow: var(--shadow-lg);
+        min-height: 400px;
+    }
+
+    .content-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border-soft);
+        background: var(--bg-surface);
+    }
+
+    .content-tabs {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .tab-btn {
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        background: transparent;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .tab-btn:hover { background: var(--bg-tertiary); }
+    .tab-btn.active {
+        background: var(--primary-soft);
+        color: var(--primary);
+        border-color: var(--primary-light);
+    }
+
+    .content-body {
+        padding: 2rem;
+        flex: 1;
+        font-family: 'Inter', sans-serif; /* Clean font for reading */
+        font-size: 1rem;
+        line-height: 1.7;
+        color: var(--text-primary);
+        overflow-y: auto;
+        white-space: pre-wrap;
+        position: relative;
+    }
+
+    .content-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid var(--border-soft);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--bg-surface);
+        font-size: 0.8rem;
+        color: var(--text-tertiary);
+    }
+
+    /* Copy Button */
+    .btn-copy {
+        width: 36px; height: 36px;
+        border-radius: 10px;
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-soft);
+        color: var(--text-secondary);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: 0.2s;
+    }
+
+    .btn-copy:hover {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+
+    /* ===== TERMINAL LOG (FIXED & VISIBLE) ===== */
+    .terminal-window {
+        background: #0f172a; /* Deep Slate/Black */
+        border-radius: 16px;
+        padding: 1.5rem;
+        font-family: 'JetBrains Mono', monospace; /* Monospace font is key */
+        font-size: 0.85rem;
+        color: #e2e8f0; /* Light text color */
+        border: 1px solid rgba(255,255,255,0.1);
+        height: 180px;
+        overflow-y: auto;
+        box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        position: relative;
+    }
+
+    /* Scanline effect */
+    .terminal-window::before {
+        content: " ";
+        display: block;
+        position: absolute;
+        top: 0; left: 0; bottom: 0; right: 0;
+        background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+        background-size: 100% 4px;
+        pointer-events: none;
+        z-index: 2;
+        opacity: 0.3;
+    }
+
+    .log-entry {
+        margin-bottom: 0.6rem;
+        display: flex;
+        gap: 0.8rem;
+        opacity: 0; /* Starts hidden */
+        animation: fadeInLog 0.3s forwards; /* Animate in */
+        position: relative;
+        z-index: 3;
+    }
+
+    @keyframes fadeInLog {
+        from { opacity: 0; transform: translateY(5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .log-time { color: #64748b; font-weight: 600; }
+    .log-msg { color: #e2e8f0; }
+    .log-success { color: #4ade80; text-shadow: 0 0 5px rgba(74, 222, 128, 0.5); }
+    .log-info { color: #60a5fa; }
+    .log-process { color: #fbbf24; }
+
+    /* Blinking Cursor at the end */
+    .cursor-blink {
+        display: inline-block;
+        width: 8px;
+        height: 15px;
+        background: var(--primary);
+        animation: cursorBlink 1s infinite;
+        vertical-align: middle;
+        margin-left: 5px;
+    }
+
+    @keyframes cursorBlink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0; }
+    }
+
+    /* Loading State */
+    .processing-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: var(--text-tertiary);
+        gap: 1.5rem;
+    }
+
+    .spinner-ring {
+        width: 60px; height: 60px;
+        border: 4px solid var(--border-soft);
+        border-top-color: var(--primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 1024px) {
+        .agent-layout { grid-template-columns: 1fr; height: auto; }
+        .input-panel { height: auto; }
+        .content-card { min-height: 400px; }
+    }
+</style>
+
+<div class="agent-layout">
+    <div class="input-panel">
+        <div class="panel-title">
+            <i class="fas fa-pen-fancy"></i> Generation Parameters
+        </div>
+
+        <div class="form-group">
+            <label>Output Channel</label>
+            <select class="form-control" id="platform" onchange="updatePlatformHint()">
+                <option value="linkedin">LinkedIn Post</option>
+                <option value="email">Cold Email</option>
+                <option value="call">Call Script</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Tone of Voice</label>
+            <div class="tone-selector">
+                <div class="tone-option selected" onclick="selectTone(this, 'Professional')">
+                    <i class="fas fa-briefcase"></i>
+                    <span>Professional</span>
+                </div>
+                <div class="tone-option" onclick="selectTone(this, 'Persuasive')">
+                    <i class="fas fa-bullhorn"></i>
+                    <span>Persuasive</span>
+                </div>
+                <div class="tone-option" onclick="selectTone(this, 'Casual')">
+                    <i class="fas fa-coffee"></i>
+                    <span>Casual</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Target Audience (ICP)</label>
+            <input type="text" class="form-control" id="audience" value="CTO of Enterprise SaaS" placeholder="e.g., Marketing Managers in Retail">
+        </div>
+
+        <div class="form-group">
+            <label>Core Message / Value Prop</label>
+            <textarea class="form-control" id="message" placeholder="Describe the main point or offer...">Our multi-agent system automates personalized outreach, increasing response rates by 40%.</textarea>
+        </div>
+
+        <button class="btn-execute" onclick="generateContent()">
+            <i class="fas fa-magic"></i> Generate Content
+        </button>
+    </div>
+
+    <div class="results-panel">
+        <div class="agent-monitor">
+            <div class="status-indicator">
+                <span class="pulse-dot"></span>
+                <span>Content Engine: Active</span>
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-tertiary);">TOKEN_LIMIT: 4096</div>
+        </div>
+
+        <div class="content-card">
+            <div class="content-header">
+                <div class="content-tabs">
+                    <button class="tab-btn active">Preview</button>
+                    <button class="tab-btn">Raw Text</button>
+                </div>
+                <button class="btn-copy" onclick="copyContent()" title="Copy to Clipboard">
+                    <i class="fas fa-copy"></i>
+                </button>
+            </div>
+
+            <div class="content-body" id="contentOutput">
+                <div class="processing-state">
+                    <i class="fas fa-feather-alt" style="font-size: 3rem; opacity: 0.2;"></i>
+                    <p>Enter parameters to begin generation sequence.</p>
+                </div>
+            </div>
+
+            <div class="content-footer" id="contentMeta">
+                <span>Waiting for input...</span>
+                <span>0 words</span>
+            </div>
+        </div>
+
+        <div class="terminal-window" id="auditTerminal">
+            <div class="log-entry">
+                <span class="log-time">[SYSTEM]</span>
+                <span class="log-msg log-info">Neural engine initialized. Ready.</span>
+            </div>
+            <div id="terminalCursor" class="cursor-blink"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let selectedTone = 'Professional';
+
+    function selectTone(el, tone) {
+        document.querySelectorAll('.tone-option').forEach(opt => opt.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedTone = tone;
+    }
+
+    function updatePlatformHint() {
+        const platform = document.getElementById('platform').value;
+        const msg = document.getElementById('message');
+        if(platform === 'linkedin') msg.placeholder = "e.g. Share insights on AI trends...";
+        else if(platform === 'email') msg.placeholder = "e.g. Introduce our solution...";
+        else msg.placeholder = "e.g. Key talking points for the call...";
+    }
+
+    // ===== MOCK TERMINAL PROCESS =====
+    async function runTerminalSequence() {
+        const platform = document.getElementById('platform').value;
+        const steps = [
+            `Parsing input parameters...`,
+            `Detecting sentiment: ${selectedTone.toUpperCase()}`,
+            `Fetching ICP data vectors...`,
+            `Optimizing for ${platform.toUpperCase()} algorithm...`,
+            `Synthesizing final output...`
+        ];
+
+        for (const step of steps) {
+            logToTerminal(step, "process");
+            await new Promise(r => setTimeout(r, 600)); // Delay between logs
+        }
+    }
+
+    async function generateContent() {
+        const btn = document.querySelector('.btn-execute');
+        const output = document.getElementById('contentOutput');
+        const meta = document.getElementById('contentMeta');
+        
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+        btn.disabled = true;
+        btn.style.opacity = '0.7';
+        
+        output.innerHTML = `
+            <div class="processing-state">
+                <div class="spinner-ring"></div>
+                <p>Synthesizing content vectors...</p>
+            </div>
+        `;
+        
+        logToTerminal("Input received. Context analysis started...", "info");
+
+        // Run the fake terminal logs
+        await runTerminalSequence();
+
+        // Simulate final generation delay
+        setTimeout(() => {
+            const platform = document.getElementById('platform').value;
+            const audience = document.getElementById('audience').value;
+            const msgInput = document.getElementById('message').value;
+            
+            let content = "";
+            if(platform === 'linkedin') {
+                content = `🚀 **Is your enterprise ready for the next leap in automation?**\n\nWe often talk about efficiency, but are we truly leveraging the tools at our disposal?\n\nAs a ${audience}, you know the bottleneck isn't strategy—it's execution. That's where Klodev Apex comes in.\n\n${msgInput}\n\n👇 Let's discuss how AI can scale your personalized outreach without losing the human touch.\n\n#AI #SalesTech #Automation #EnterpriseGrowth`;
+            } else if (platform === 'email') {
+                content = `Subject: Scaling your outreach efficiency\n\nHi [Name],\n\nI noticed that [Company] is scaling rapidly, and I imagine your team is looking for ways to maintain high-touch outreach without burning out.\n\nI'm reaching out because we've built a multi-agent system designed specifically for ${audience} like yourself.\n\n${msgInput}\n\nWould you be open to a 10-minute walkthrough next Tuesday?\n\nBest,\nPrajwal\nKlodev Nexus`;
+            } else {
+                // CALL SCRIPT
+                content = `
+**CALL SCRIPT: ${selectedTone.toUpperCase()}**
+**Target:** ${audience}
+
+**(Opening)**
+"Hi [Name], this is [Your Name] from Klodev. I noticed [Company]'s work in [Industry], and I'm calling because I think we can help you scale your outreach without adding headcount. Do you have 30 seconds?"
+
+**(Value Prop)**
+"Great. ${msgInput} We essentially act as an AI-powered extension of your team."
+
+**(Qualification)**
+"How are you currently handling your outbound personalization?"
+
+**(Closing)**
+"I'd love to show you a quick 5-minute demo of how the agents work. Does [Time] work for you?"
+`;
+            }
+
+            // Clear loading and start typing effect
+            output.innerHTML = "";
+            typeWriter(content, output);
+            
+            const wordCount = content.split(' ').length;
+            meta.innerHTML = `
+                <span><i class="fas fa-check-circle" style="color:var(--success)"></i> Generated successfully</span>
+                <span>${wordCount} words · ${platform.toUpperCase()} format</span>
+            `;
+
+            btn.innerHTML = '<i class="fas fa-magic"></i> Generate Content';
+            btn.disabled = false;
+            btn.style.opacity = '1';
+
+            logToTerminal("Content synthesis complete.", "success");
+            showToast("Content generated successfully", "success");
+
+        }, 500);
+    }
+
+    // Typewriter Effect Function
+    function typeWriter(text, element) {
+        let i = 0;
+        const speed = 10; // Typing speed in ms
+        
+        // Preserve line breaks for HTML
+        // Note: For typing effect, we need to handle <br> differently if we want char by char.
+        // A simple way is to pre-format line breaks.
+        
+        const timer = setInterval(() => {
+            if (i < text.length) {
+                const char = text.charAt(i);
+                if (char === '\n') {
+                    element.innerHTML += '<br>';
+                } else {
+                    element.innerHTML += char;
+                }
+                i++;
+                element.scrollTop = element.scrollHeight;
+            } else {
+                clearInterval(timer);
+            }
+        }, speed);
+    }
+
+    function logToTerminal(msg, type = "normal") {
+        const terminal = document.getElementById('auditTerminal');
+        const cursor = document.getElementById('terminalCursor');
+        const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+        let colorClass = "log-msg";
+        
+        if (type === "success") colorClass = "log-success";
+        else if (type === "info") colorClass = "log-info";
+        else if (type === "process") colorClass = "log-process";
+        
+        const entry = document.createElement('div');
+        entry.className = "log-entry";
+        entry.innerHTML = `
+            <span class="log-time">[${time}]</span>
+            <span class="${colorClass}">${msg}</span>
+        `;
+        
+        // Insert BEFORE the cursor
+        terminal.insertBefore(entry, cursor);
+        terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    function copyContent() {
+        const text = document.getElementById('contentOutput').innerText;
+        navigator.clipboard.writeText(text);
+        showToast("Copied to clipboard", "success");
+        logToTerminal("Content copied to clipboard.", "info");
+    }
+</script>
+{% endblock %}

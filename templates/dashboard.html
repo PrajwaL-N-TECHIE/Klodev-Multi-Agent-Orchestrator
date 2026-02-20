@@ -1,0 +1,558 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics{% endblock %}
+{% block page_title %}neural insights engine{% endblock %}
+
+{% block content %}
+<style>
+    /* ===== PAGE LAYOUT ===== */
+    .analytics-container {
+        padding: 1rem 0;
+        animation: fadeInUp 0.8s ease;
+    }
+
+    /* ===== HEADER CONTROLS ===== */
+    .controls-wrapper {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2.5rem;
+    }
+
+    .live-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+        padding: 0.4rem 1rem;
+        border-radius: 30px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .live-dot {
+        width: 8px; height: 8px;
+        background: #10b981;
+        border-radius: 50%;
+        box-shadow: 0 0 10px #10b981;
+        animation: pulseLive 1.5s infinite;
+    }
+
+    @keyframes pulseLive {
+        0% { opacity: 0.5; transform: scale(1); }
+        50% { opacity: 1; transform: scale(1.2); }
+        100% { opacity: 0.5; transform: scale(1); }
+    }
+
+    .date-range {
+        display: flex;
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-soft);
+        border-radius: 50px;
+        padding: 0.3rem;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .date-btn {
+        padding: 0.6rem 1.4rem;
+        border: none;
+        border-radius: 40px;
+        background: transparent;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .date-btn:hover { color: var(--primary); }
+
+    .date-btn.active {
+        background: var(--gradient-primary);
+        color: white;
+        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+    }
+
+    /* ===== HERO KPI GRID ===== */
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .kpi-card {
+        background: var(--bg-elevated);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--border-soft);
+        border-radius: 24px;
+        padding: 1.8rem;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    /* Glowing Hover Effect */
+    .kpi-card::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        border-radius: 24px;
+        box-shadow: inset 0 0 20px rgba(255,255,255,0);
+        transition: 0.3s;
+        pointer-events: none;
+    }
+
+    .kpi-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1);
+        border-color: var(--primary-light);
+    }
+
+    .kpi-card:hover::after {
+        box-shadow: inset 0 0 20px rgba(37, 99, 235, 0.05);
+    }
+
+    .kpi-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+
+    .kpi-icon {
+        width: 54px; height: 54px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        transition: 0.4s;
+    }
+
+    .kpi-card:hover .kpi-icon { transform: rotate(10deg) scale(1.1); }
+
+    .icon-mail { background: linear-gradient(135deg, rgba(37,99,235,0.1), rgba(37,99,235,0.2)); color: var(--primary); }
+    .icon-call { background: linear-gradient(135deg, rgba(124,58,237,0.1), rgba(124,58,237,0.2)); color: var(--secondary); }
+    .icon-link { background: linear-gradient(135deg, rgba(6,182,212,0.1), rgba(6,182,212,0.2)); color: var(--accent); }
+    .icon-conv { background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.2)); color: var(--success); }
+
+    .trend-badge {
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .trend-up { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+    .trend-down { background: rgba(239, 68, 68, 0.1); color: var(--error); }
+
+    .kpi-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        line-height: 1;
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.04em;
+        transition: opacity 0.3s ease;
+    }
+
+    .kpi-label {
+        font-size: 0.9rem;
+        color: var(--text-tertiary);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    /* ===== CHARTS SECTION ===== */
+    .charts-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .glass-panel {
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-soft);
+        border-radius: 24px;
+        padding: 2rem;
+        box-shadow: var(--shadow-md);
+        position: relative;
+    }
+
+    .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .panel-header h3 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+    }
+
+    .panel-header h3 i { color: var(--primary); }
+
+    .chart-select {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-soft);
+        color: var(--text-secondary);
+        padding: 0.5rem 1rem;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .chart-select:hover { border-color: var(--primary); color: var(--primary); }
+
+    .chart-wrapper {
+        position: relative;
+        height: 320px;
+        width: 100%;
+    }
+
+    /* ===== INSIGHT CARDS ===== */
+    .insights-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1.2rem;
+    }
+
+    .insight-card {
+        background: var(--bg-surface);
+        border-radius: 16px;
+        padding: 1.2rem;
+        border: 1px solid transparent;
+        transition: 0.3s;
+        cursor: pointer;
+    }
+
+    .insight-card:hover {
+        background: var(--bg-card);
+        border-color: var(--primary-light);
+        transform: scale(1.02);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .insight-top {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--text-tertiary);
+        text-transform: uppercase;
+    }
+
+    .insight-value {
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin-bottom: 0.2rem;
+    }
+
+    .insight-desc {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        line-height: 1.4;
+    }
+
+    /* Progress Bar */
+    .mini-progress {
+        height: 6px;
+        background: var(--border-soft);
+        border-radius: 10px;
+        margin-top: 1rem;
+        overflow: hidden;
+    }
+    .mini-fill {
+        height: 100%;
+        border-radius: 10px;
+        animation: fillUp 1.5s ease-out forwards;
+    }
+
+    @keyframes fillUp { from { width: 0; } }
+
+    /* ===== CHANNEL BREAKDOWN ===== */
+    .channel-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+    }
+
+    .channel-stat {
+        text-align: center;
+        padding: 2rem;
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-soft);
+        border-radius: 20px;
+        transition: 0.3s;
+    }
+
+    .channel-stat:hover {
+        border-color: var(--primary);
+        transform: translateY(-5px);
+    }
+
+    .c-ring {
+        width: 80px; height: 80px;
+        border-radius: 50%;
+        border: 5px solid var(--bg-surface);
+        margin: 0 auto 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: var(--text-primary);
+        box-shadow: 0 0 0 4px var(--bg-elevated), 0 0 0 6px var(--border-soft);
+    }
+
+    @media (max-width: 1024px) {
+        .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+        .charts-grid { grid-template-columns: 1fr; }
+        .channel-grid { grid-template-columns: 1fr; }
+    }
+</style>
+
+<div class="analytics-container">
+    
+    <div class="controls-wrapper">
+        <div class="live-indicator">
+            <span class="live-dot"></span> LIVE DATA FEED
+        </div>
+        <div class="date-range">
+            <button class="date-btn" onclick="updateRange(this, '7d')">7D</button>
+            <button class="date-btn active" onclick="updateRange(this, '30d')">30D</button>
+            <button class="date-btn" onclick="updateRange(this, '3m')">3M</button>
+            <button class="date-btn" onclick="updateRange(this, '1y')">1Y</button>
+        </div>
+    </div>
+
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-top">
+                <div class="kpi-icon icon-mail"><i class="fas fa-envelope"></i></div>
+                <span class="trend-badge trend-up" id="trendMail"><i class="fas fa-arrow-up"></i> 12.4%</span>
+            </div>
+            <div class="kpi-value" id="emailsSentCount">1,247</div>
+            <div class="kpi-label">Emails Sent</div>
+        </div>
+        
+        <div class="kpi-card">
+            <div class="kpi-top">
+                <div class="kpi-icon icon-call"><i class="fas fa-phone-alt"></i></div>
+                <span class="trend-badge trend-up" id="trendCall"><i class="fas fa-arrow-up"></i> 8.1%</span>
+            </div>
+            <div class="kpi-value" id="callsConnectedCount">48</div>
+            <div class="kpi-label">Calls Connected</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-top">
+                <div class="kpi-icon icon-link"><i class="fab fa-linkedin-in"></i></div>
+                <span class="trend-badge trend-up" id="trendSocial"><i class="fas fa-arrow-up"></i> 23%</span>
+            </div>
+            <div class="kpi-value" id="socialActionsCount">156</div>
+            <div class="kpi-label">Social Actions</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-top">
+                <div class="kpi-icon icon-conv"><i class="fas fa-check-circle"></i></div>
+                <span class="trend-badge trend-up" id="trendConv"><i class="fas fa-arrow-up"></i> 5.2%</span>
+            </div>
+            <div class="kpi-value" id="conversionRateCount">12.8%</div>
+            <div class="kpi-label">Conversion Rate</div>
+        </div>
+    </div>
+
+    <div class="charts-grid">
+        <div class="glass-panel">
+            <div class="panel-header">
+                <h3><i class="fas fa-chart-area"></i> Engagement Velocity</h3>
+                <select class="chart-select">
+                    <option>Weekly View</option>
+                    <option>Monthly View</option>
+                </select>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="mainChart"></canvas>
+            </div>
+        </div>
+
+        <div class="glass-panel">
+            <div class="panel-header">
+                <h3><i class="fas fa-lightbulb"></i> Neural Insights</h3>
+            </div>
+            <div class="insights-list">
+                <div class="insight-card">
+                    <div class="insight-top">
+                        <span>Best Time</span>
+                        <i class="fas fa-clock" style="color: var(--primary);"></i>
+                    </div>
+                    <div class="insight-value">10:30 AM</div>
+                    <div class="insight-desc">Tuesday mornings show <strong>85% higher</strong> open rates.</div>
+                    <div class="mini-progress"><div class="mini-fill" style="width: 85%; background: var(--primary);"></div></div>
+                </div>
+
+                <div class="insight-card">
+                    <div class="insight-top">
+                        <span>Top Subject</span>
+                        <i class="fas fa-magic" style="color: var(--secondary);"></i>
+                    </div>
+                    <div class="insight-value" style="font-size: 1.1rem;">"Transform your enterprise"</div>
+                    <div class="insight-desc">Generated <strong>32%</strong> open rate vs 18% avg.</div>
+                    <div class="mini-progress"><div class="mini-fill" style="width: 65%; background: var(--secondary);"></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="channel-grid">
+        <div class="channel-stat">
+            <div class="c-ring" style="border-color: var(--primary);">68%</div>
+            <h4 style="font-weight: 700; color: var(--text-primary);">Email Dominance</h4>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.5rem;">Primary driver of initial contact.</p>
+        </div>
+        <div class="channel-stat">
+            <div class="c-ring" style="border-color: var(--secondary);">22%</div>
+            <h4 style="font-weight: 700; color: var(--text-primary);">Voice Connect</h4>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.5rem;">High conversion on follow-ups.</p>
+        </div>
+        <div class="channel-stat">
+            <div class="c-ring" style="border-color: var(--accent);">10%</div>
+            <h4 style="font-weight: 700; color: var(--text-primary);">Social Touch</h4>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.5rem;">Building brand awareness.</p>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Initialize Premium Chart
+    const ctx = document.getElementById('mainChart').getContext('2d');
+    
+    // Create Gradients
+    const gradientFill = ctx.createLinearGradient(0, 0, 0, 400);
+    gradientFill.addColorStop(0, 'rgba(37, 99, 235, 0.2)');
+    gradientFill.addColorStop(1, 'rgba(37, 99, 235, 0)');
+
+    let myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [{
+                label: 'Engagement Score',
+                data: [45, 78, 62, 91, 55, 30, 40],
+                borderColor: '#2563eb',
+                backgroundColor: gradientFill,
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+                pointBackgroundColor: '#ffffff',
+                pointBorderColor: '#2563eb',
+                pointBorderWidth: 2,
+                pointRadius: 6,
+                pointHoverRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    titleColor: '#ffffff',
+                    bodyColor: '#cbd5e1',
+                    padding: 12,
+                    cornerRadius: 12,
+                    displayColors: false
+                }
+            },
+            scales: {
+                y: {
+                    grid: { color: 'rgba(226, 232, 240, 0.4)' },
+                    ticks: { color: '#64748b' }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#64748b' }
+                }
+            }
+        }
+    });
+
+    // Function to load backend data
+    async function loadAnalyticsData(timeframe) {
+        try {
+            // Fetch real/scaled data from our Python backend
+            const response = await fetch(`/api/analytics?timeframe=${timeframe}`);
+            const data = await response.json();
+            
+            const idsToUpdate = ['emailsSentCount', 'callsConnectedCount', 'socialActionsCount', 'conversionRateCount'];
+            
+            // 1. Fade out the numbers slightly
+            idsToUpdate.forEach(id => {
+                document.getElementById(id).style.opacity = '0.3';
+            });
+
+            // 2. Wait a split second, change the values, and fade them back in
+            setTimeout(() => {
+                document.getElementById('emailsSentCount').innerText = data.total_emails.toLocaleString();
+                document.getElementById('callsConnectedCount').innerText = data.total_calls.toLocaleString();
+                document.getElementById('socialActionsCount').innerText = data.total_linkedin.toLocaleString();
+                document.getElementById('conversionRateCount').innerText = data.conversion_rate + '%';
+                
+                // Randomize small trend indicators for dynamic feel
+                document.getElementById('trendMail').innerHTML = `<i class="fas fa-arrow-up"></i> ${(Math.random() * 5 + 5).toFixed(1)}%`;
+                
+                idsToUpdate.forEach(id => {
+                    document.getElementById(id).style.opacity = '1';
+                });
+            }, 300);
+
+            // 3. Make the chart wiggle with new random data based on timeframe
+            let baseData = [45, 78, 62, 91, 55, 30, 40];
+            let multiplier = timeframe === '7d' ? 0.5 : timeframe === '30d' ? 1 : timeframe === '3m' ? 2.5 : 5;
+            let newData = baseData.map(val => Math.floor(val * multiplier * (0.8 + Math.random() * 0.4)));
+            
+            myChart.data.datasets[0].data = newData;
+            myChart.update();
+
+        } catch (error) {
+            console.error("Failed to load analytics:", error);
+        }
+    }
+
+    // Button Click Logic
+    function updateRange(btn, range) {
+        // Remove active class from all buttons
+        document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
+        // Add active class to clicked button
+        btn.classList.add('active');
+        
+        // Fetch new data!
+        loadAnalyticsData(range);
+    }
+
+    // Load default (30d) data when the page loads
+    document.addEventListener('DOMContentLoaded', () => {
+        loadAnalyticsData('30d');
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,13 @@
+Flask==3.0.3
+langchain==0.1.20
+langchain-core==0.1.52
+langchain-google-genai==1.0.10
+langgraph==0.1.0
+pydantic==2.7.0
+pydantic-settings==2.2.0
+python-dotenv==1.0.1
+google-generativeai==0.6.0
+requests==2.32.3
+python-multipart==0.0.9
+typing-extensions==4.11.0
+chromadb==0.3.23

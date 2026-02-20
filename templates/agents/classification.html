@@ -1,0 +1,422 @@
+{% extends "base.html" %}
+
+{% block title %}Classification Agent{% endblock %}
+{% block page_title %}agent 1 · semantic classifier{% endblock %}
+
+{% block content %}
+<style>
+    /* ===== LAYOUT ===== */
+    .agent-layout {
+        display: grid;
+        grid-template-columns: 400px 1fr;
+        gap: 2rem;
+        height: calc(100vh - 140px);
+        animation: fadeInUp 0.6s ease;
+        overflow: hidden;
+    }
+
+    /* ===== INPUT PANEL (Left) ===== */
+    .input-panel {
+        background: var(--bg-elevated);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid var(--border-soft);
+        border-radius: 24px;
+        padding: 2rem;
+        overflow-y: auto;
+        box-shadow: var(--shadow-lg);
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        height: 100%;
+    }
+
+    .panel-title {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 1px solid var(--border-soft);
+        padding-bottom: 1rem;
+    }
+
+    .panel-title i {
+        color: var(--primary);
+        font-size: 1.2rem;
+        filter: drop-shadow(0 0 8px var(--primary-glow));
+    }
+
+    /* Form Inputs */
+    .form-group label {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-tertiary);
+        margin-bottom: 0.6rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 1rem 1.2rem;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-soft);
+        border-radius: 14px;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px var(--primary-soft);
+        background: var(--bg-card);
+    }
+
+    textarea.form-control { resize: none; min-height: 120px; line-height: 1.6; }
+
+    /* Voice Button */
+    .voice-input-wrapper { position: relative; }
+    .voice-btn {
+        position: absolute; bottom: 1rem; right: 1rem;
+        width: 40px; height: 40px;
+        border-radius: 12px; background: var(--bg-elevated);
+        border: 1px solid var(--border-soft); color: var(--primary);
+        cursor: pointer; display: flex; align-items: center; justify-content: center;
+        transition: all 0.3s ease; box-shadow: var(--shadow-sm);
+    }
+    .voice-btn:hover { background: var(--primary); color: white; transform: scale(1.05); }
+
+    /* Execute Button */
+    .btn-execute {
+        width: 100%; padding: 1rem;
+        background: var(--gradient-primary); color: white;
+        border: none; border-radius: 16px;
+        font-weight: 700; font-size: 1rem;
+        cursor: pointer; display: flex; align-items: center; justify-content: center;
+        gap: 0.8rem; transition: all 0.3s ease; margin-top: auto;
+        box-shadow: 0 10px 25px -5px var(--primary-glow);
+    }
+    .btn-execute:hover { transform: translateY(-3px); box-shadow: 0 20px 35px -8px var(--primary-glow); }
+    .btn-execute:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    /* ===== RESULTS PANEL (Right) ===== */
+    .results-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        height: 100%;
+        overflow: hidden; 
+    }
+
+    .agent-monitor {
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-soft);
+        border-radius: 16px;
+        padding: 1rem 1.5rem;
+        display: flex; align-items: center; justify-content: space-between;
+        box-shadow: var(--shadow-sm); flex-shrink: 0;
+    }
+
+    .status-indicator {
+        display: flex; align-items: center; gap: 0.8rem;
+        font-weight: 600; font-size: 0.9rem; color: var(--text-primary);
+    }
+
+    .pulse-dot {
+        width: 10px; height: 10px; background: var(--success);
+        border-radius: 50%; box-shadow: 0 0 10px var(--success);
+        animation: pulseGreen 2s infinite;
+    }
+    @keyframes pulseGreen {
+        0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+        70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    /* Scrollable Results Area */
+    #resultsArea {
+        flex: 1;
+        overflow-y: auto;
+        padding-right: 0.5rem;
+        display: flex; flex-direction: column; gap: 1rem;
+    }
+
+    /* Result Card */
+    .result-card {
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-soft);
+        border-radius: 20px;
+        padding: 1.5rem;
+        position: relative;
+        overflow: hidden;
+        animation: slideInRight 0.4s ease forwards;
+        transition: transform 0.3s ease;
+        border-left: 4px solid var(--primary);
+    }
+    .result-card:hover { transform: translateX(5px); box-shadow: var(--shadow-md); border-color: var(--primary-light); }
+
+    .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
+    .category-title { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); }
+    .confidence-score { font-size: 0.8rem; font-weight: 700; color: var(--primary); background: var(--primary-soft); padding: 0.3rem 0.8rem; border-radius: 20px; }
+    .result-desc { font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1rem; }
+    
+    .tags-container { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .tag { font-size: 0.75rem; background: var(--bg-surface); border: 1px solid var(--border-soft); color: var(--text-tertiary); padding: 0.3rem 0.8rem; border-radius: 8px; font-weight: 600; }
+
+    /* ===== TERMINAL LOG (FIXED VISIBILITY) ===== */
+    .terminal-window {
+        background: #0f172a; /* Deep Black/Blue */
+        border-radius: 16px;
+        padding: 1.5rem;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.85rem;
+        border: 1px solid rgba(255,255,255,0.1);
+        height: 200px;
+        overflow-y: auto;
+        box-shadow: inset 0 0 30px rgba(0,0,0,0.6);
+        flex-shrink: 0; 
+        position: relative;
+    }
+
+    .log-entry {
+        margin-bottom: 0.5rem;
+        display: flex;
+        gap: 0.8rem;
+        opacity: 0;
+        animation: fadeInText 0.3s forwards; /* FIXED: Now points to valid keyframe */
+    }
+
+    /* High Contrast Text Colors */
+    .log-time { color: #64748b; font-weight: 700; min-width: 80px; }
+    .log-msg { color: #ffffff; text-shadow: 0 0 2px rgba(255,255,255,0.5); } 
+    .log-success { color: #22c55e; font-weight: 700; text-shadow: 0 0 5px rgba(34, 197, 94, 0.6); }
+    .log-info { color: #3b82f6; font-weight: 600; }
+    .log-process { color: #fbbf24; }
+
+    /* Cursor */
+    .cursor-blink {
+        display: inline-block;
+        width: 8px; height: 16px;
+        background: #22c55e;
+        animation: blink 1s infinite;
+        vertical-align: sub;
+        margin-left: 5px;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* Keyframes */
+    @keyframes fadeInText { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideInRight { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+
+    /* Loading State */
+    .processing-state {
+        text-align: center; padding: 4rem; color: var(--text-tertiary);
+        display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;
+    }
+    .spinner-ring {
+        width: 50px; height: 50px; border: 4px solid var(--border-soft); border-top-color: var(--primary);
+        border-radius: 50%; margin-bottom: 1.5rem; animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 1024px) {
+        .agent-layout { grid-template-columns: 1fr; height: auto; }
+        .input-panel { height: auto; }
+    }
+</style>
+
+<div class="agent-layout">
+    <div class="input-panel">
+        <div class="panel-title">
+            <i class="fas fa-sliders-h"></i> Configuration Parameters
+        </div>
+
+        <div class="form-group">
+            <label>Temporal Context</label>
+            <input type="text" class="form-control" id="timeContext" value="Q1 2026" placeholder="e.g., Fiscal Year, Holiday Season">
+        </div>
+
+        <div class="form-group">
+            <label>Geo-Spatial Target</label>
+            <input type="text" class="form-control" id="location" value="Global / Tier-1 Markets" placeholder="Target Region">
+        </div>
+
+        <div class="form-group">
+            <label>Behavioral Analysis</label>
+            <div class="voice-input-wrapper">
+                <textarea class="form-control" id="behavior" placeholder="Describe the expected business behavior or scenario...">Enterprise SaaS digital transformation sales outreach to C-level executives interested in AI analytics platforms.</textarea>
+                <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()" title="Voice Input">
+                    <i class="fas fa-microphone"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Primary Intent</label>
+            <select class="form-control" id="intent">
+                <option value="inquiry">Product Inquiry / Discovery</option>
+                <option value="purchase">High Purchase Intent</option>
+                <option value="partnership">Strategic Partnership</option>
+                <option value="support">Technical Support</option>
+            </select>
+        </div>
+
+        <button class="btn-execute" onclick="runClassification()">
+            <i class="fas fa-bolt"></i> Initialize Classification
+        </button>
+    </div>
+
+    <div class="results-panel">
+        <div class="agent-monitor">
+            <div class="status-indicator">
+                <span class="pulse-dot"></span>
+                <span>Semantic Core: Online</span>
+            </div>
+            <div class="model-badge">MODEL: KLODEV-V3-TURBO</div>
+        </div>
+
+        <div id="resultsArea">
+            <div class="processing-state" id="emptyState">
+                <i class="fas fa-cube" style="font-size: 3rem; opacity: 0.2; margin-bottom: 1rem;"></i>
+                <p>Awaiting input parameters to begin classification sequence.</p>
+            </div>
+        </div>
+
+        <div class="terminal-window" id="auditTerminal">
+            <div class="log-entry">
+                <span class="log-time">[SYSTEM]</span>
+                <span class="log-success">Neural engine initialized. Ready.</span>
+            </div>
+            <div class="log-entry">
+                <span class="log-time">[STATUS]</span>
+                <span class="log-msg">Awaiting user input stream...</span>
+            </div>
+            <div id="terminalCursor" class="cursor-blink"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let isListening = false;
+
+    // Terminal Logger
+    function logToTerminal(msg, type = "normal") {
+        const terminal = document.getElementById('auditTerminal');
+        const cursor = document.getElementById('terminalCursor');
+        const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+        let colorClass = "log-msg";
+        
+        if (type === "success") colorClass = "log-success";
+        else if (type === "info") colorClass = "log-info";
+        else if (type === "process") colorClass = "log-process";
+        
+        const entry = document.createElement('div');
+        entry.className = "log-entry";
+        entry.innerHTML = `
+            <span class="log-time">[${time}]</span>
+            <span class="${colorClass}">${msg}</span>
+        `;
+        
+        // Insert BEFORE the blinking cursor to keep cursor at the end
+        terminal.insertBefore(entry, cursor);
+        terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    // Sequence Simulation
+    async function runTerminalSequence() {
+        const steps = [
+            { msg: "Ingesting input parameters...", type: "info" },
+            { msg: "Tokenizing behavioral context (402 tokens)...", type: "normal" },
+            { msg: "Accessing global intent database...", type: "process" },
+            { msg: "Running semantic analysis (v3.0 model)...", type: "process" },
+            { msg: "Correlation found: 98% confidence match.", type: "success" },
+            { msg: "Generating result vectors...", type: "normal" }
+        ];
+
+        for (const step of steps) {
+            logToTerminal(step.msg, step.type);
+            await new Promise(r => setTimeout(r, 600)); // Delay between steps
+        }
+    }
+
+    // Main Classification Function
+    async function runClassification() {
+        const resultsArea = document.getElementById('resultsArea');
+        const btn = document.querySelector('.btn-execute');
+        
+        // 1. UI Loading State
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        btn.disabled = true;
+        btn.style.opacity = '0.7';
+        
+        resultsArea.innerHTML = `
+            <div class="processing-state">
+                <div class="spinner-ring"></div>
+                <p>Agent is analyzing intent vectors...</p>
+            </div>
+        `;
+
+        // 2. Run Terminal Animation
+        await runTerminalSequence();
+
+        // 3. Render 3 Distinct Results
+        setTimeout(() => {
+            const mockData = [
+                {
+                    title: "Enterprise SaaS Outreach",
+                    score: 98,
+                    desc: "High-value opportunity identified based on 'digital transformation' keyword density.",
+                    tags: ["B2B", "High-Ticket", "C-Suite"]
+                },
+                {
+                    title: "Strategic Partnership",
+                    score: 84,
+                    desc: "Potential alignment for long-term integration partnership and co-selling opportunities.",
+                    tags: ["Partnership", "Integration", "Tech"]
+                },
+                {
+                    title: "Technical Support Query",
+                    score: 42,
+                    desc: "Low probability of sales intent; contextual markers suggest technical documentation search.",
+                    tags: ["Support", "Documentation", "Low-Priority"]
+                }
+            ];
+
+            // Build HTML
+            resultsArea.innerHTML = mockData.map((item, index) => `
+                <div class="result-card" style="animation-delay: ${index * 0.15}s">
+                    <div class="result-header">
+                        <span class="category-title">${item.title}</span>
+                        <span class="confidence-score">${item.score}% Match</span>
+                    </div>
+                    <p class="result-desc">${item.desc}</p>
+                    <div class="tags-container">
+                        ${item.tags.map(tag => `<span class="tag">#${tag}</span>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+            // Reset UI
+            btn.innerHTML = '<i class="fas fa-bolt"></i> Initialize Classification';
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            
+            logToTerminal("Classification complete. 3 Intents identified.", "success");
+            showToast("Classification successful", "success");
+
+        }, 500);
+    }
+
+    function toggleVoice() {
+        showToast("Voice input activated", "info");
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,640 @@
+{% extends "base.html" %}
+
+{% block title %}History{% endblock %}
+{% block page_title %}workflow audit log{% endblock %}
+
+{% block content %}
+<style>
+    /* ===== PAGE SPECIFIC STYLES ===== */
+    .history-container {
+        padding: 1rem 0;
+        animation: fadeInUp 0.6s ease;
+    }
+
+    /* Filters Bar */
+    .filters-bar {
+        background: var(--bg-elevated);
+        backdrop-filter: blur(12px);
+        border: 1px solid var(--border-soft);
+        border-radius: 24px;
+        padding: 1.5rem 2rem;
+        margin-bottom: 2.5rem;
+        display: flex;
+        gap: 2rem;
+        align-items: flex-end;
+        box-shadow: var(--shadow-lg);
+        transition: 0.3s;
+    }
+
+    .filters-bar:hover {
+        border-color: var(--primary-light);
+        box-shadow: var(--shadow-xl);
+    }
+
+    .filter-group {
+        flex: 1;
+    }
+
+    .filter-group label {
+        display: block;
+        font-size: 0.75rem;
+        color: var(--text-tertiary);
+        margin-bottom: 0.6rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 700;
+    }
+
+    .filter-input {
+        width: 100%;
+        padding: 0.9rem 1.2rem;
+        border: 1px solid var(--border-soft);
+        border-radius: 14px;
+        background: var(--bg-surface);
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        font-family: inherit;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 1rem center;
+        background-size: 1rem;
+    }
+
+    .filter-input:hover {
+        border-color: var(--primary-light);
+        background-color: var(--bg-card);
+    }
+
+    .filter-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px var(--primary-soft);
+    }
+
+    .filter-actions {
+        display: flex;
+        gap: 1rem;
+        padding-bottom: 2px; /* Alignment fix */
+    }
+
+    .btn-outline {
+        padding: 0.9rem 1.8rem;
+        border: 1px solid var(--border-medium);
+        border-radius: 14px;
+        background: transparent;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.95rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    .btn-outline:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: var(--primary-soft);
+        transform: translateY(-2px);
+    }
+
+    /* Stats Cards */
+    .history-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 3rem;
+    }
+
+    .stat-card {
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-soft);
+        border-radius: 20px;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1.2rem;
+        box-shadow: var(--shadow-sm);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; bottom: 0; width: 4px;
+        background: var(--primary);
+        opacity: 0;
+        transition: 0.3s;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-xl);
+        border-color: var(--border-medium);
+    }
+
+    .stat-card:hover::after { opacity: 1; }
+
+    .stat-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        background: var(--primary-soft);
+        color: var(--primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        transition: 0.3s;
+    }
+
+    .stat-card:hover .stat-icon {
+        background: var(--primary);
+        color: white;
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    .stat-info h4 {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        line-height: 1;
+        margin-bottom: 0.3rem;
+        letter-spacing: -0.03em;
+    }
+
+    .stat-info p {
+        font-size: 0.85rem;
+        color: var(--text-tertiary);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    /* Status Colors */
+    .stat-card.success .stat-icon { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+    .stat-card.success:hover .stat-icon { background: var(--success); color: white; }
+    .stat-card.success::after { background: var(--success); }
+
+    .stat-card.error .stat-icon { background: rgba(239, 68, 68, 0.15); color: var(--error); }
+    .stat-card.error:hover .stat-icon { background: var(--error); color: white; }
+    .stat-card.error::after { background: var(--error); }
+
+    .stat-card.running .stat-icon { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+    .stat-card.running:hover .stat-icon { background: var(--warning); color: white; }
+    .stat-card.running::after { background: var(--warning); }
+
+    /* Timeline */
+    .timeline-container {
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-soft);
+        border-radius: 24px;
+        padding: 2.5rem;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .timeline-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2.5rem;
+        border-bottom: 1px solid var(--border-soft);
+        padding-bottom: 1.5rem;
+    }
+
+    .timeline-header h3 {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+    }
+
+    .timeline-controls {
+        display: flex;
+        gap: 0.8rem;
+    }
+
+    .timeline {
+        position: relative;
+        padding-left: 2.5rem;
+    }
+
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 9px;
+        top: 10px;
+        bottom: 10px;
+        width: 2px;
+        background: linear-gradient(to bottom, var(--border-soft) 50%, transparent);
+    }
+
+    .timeline-item {
+        position: relative;
+        padding-bottom: 2.5rem;
+        opacity: 0;
+        animation: slideInRight 0.5s ease forwards;
+    }
+
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -2.5rem;
+        top: 24px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--bg-surface);
+        border: 4px solid var(--border-medium);
+        z-index: 2;
+        transition: 0.3s;
+        box-shadow: 0 0 0 4px var(--bg-elevated);
+    }
+
+    .timeline-item.completed::before { border-color: var(--success); background: var(--success); box-shadow: 0 0 0 4px var(--bg-elevated), 0 0 15px var(--success); }
+    .timeline-item.failed::before { border-color: var(--error); background: var(--error); box-shadow: 0 0 0 4px var(--bg-elevated), 0 0 15px var(--error); }
+    .timeline-item.running::before { border-color: var(--warning); background: var(--bg-surface); animation: pulseDot 1.5s infinite; }
+
+    @keyframes pulseDot { 0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); } 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); } }
+
+    .timeline-content {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-soft);
+        border-radius: 18px;
+        padding: 1.5rem 2rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+    }
+
+    .timeline-content:hover {
+        transform: translateX(8px) scale(1.01);
+        box-shadow: var(--shadow-xl);
+        border-color: var(--primary-light);
+    }
+
+    .timeline-header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.2rem;
+    }
+
+    .workflow-id {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.85rem;
+        color: var(--text-tertiary);
+        background: var(--bg-card);
+        padding: 0.3rem 0.6rem;
+        border-radius: 6px;
+        border: 1px solid var(--border-soft);
+    }
+
+    .workflow-status {
+        padding: 0.4rem 1rem;
+        border-radius: 30px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .status-completed { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+    .status-failed { background: rgba(239, 68, 68, 0.1); color: var(--error); }
+    .status-running { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
+
+    .workflow-category {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+    }
+
+    .workflow-details {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+        margin: 1.5rem 0;
+        padding: 1.2rem 0;
+        border-top: 1px dashed var(--border-soft);
+        border-bottom: 1px dashed var(--border-soft);
+    }
+
+    .detail-item { text-align: left; }
+    
+    .detail-label {
+        font-size: 0.7rem;
+        color: var(--text-tertiary);
+        margin-bottom: 0.4rem;
+        text-transform: uppercase;
+        font-weight: 700;
+    }
+
+    .detail-value {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .workflow-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.85rem;
+        color: var(--text-tertiary);
+    }
+
+    .view-details {
+        padding: 0.6rem 1.4rem;
+        border: 1px solid var(--border-soft);
+        border-radius: 30px;
+        background: transparent;
+        color: var(--primary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .view-details:hover {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+        box-shadow: 0 5px 15px -5px var(--primary);
+    }
+
+    /* Pagination */
+    .pagination {
+        display: flex;
+        justify-content: center;
+        gap: 0.6rem;
+        margin-top: 3rem;
+    }
+
+    .btn-page {
+        width: 40px;
+        height: 40px;
+        border: 1px solid var(--border-soft);
+        border-radius: 12px;
+        background: var(--bg-surface);
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-page:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+        transform: translateY(-2px);
+    }
+
+    .btn-page.active {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+        box-shadow: 0 5px 15px -5px var(--primary);
+    }
+</style>
+
+<div class="history-container">
+    <div class="filters-bar">
+        <div class="filter-group">
+            <label>date range</label>
+            <select class="filter-input" id="dateFilter">
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="week" selected>Last 7 days</option>
+                <option value="month">Last 30 days</option>
+                <option value="custom">Custom range</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label>channel</label>
+            <select class="filter-input" id="channelFilter">
+                <option value="all">All channels</option>
+                <option value="email">Email</option>
+                <option value="call">Voice Call</option>
+                <option value="linkedin">LinkedIn</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label>status</label>
+            <select class="filter-input" id="statusFilter">
+                <option value="all">All status</option>
+                <option value="completed">Completed</option>
+                <option value="failed">Failed</option>
+                <option value="running">In Progress</option>
+            </select>
+        </div>
+
+        <div class="filter-actions">
+            <button class="btn-outline" onclick="applyFilters()">
+                <i class="fas fa-filter"></i> Apply
+            </button>
+            <button class="btn-outline" onclick="resetFilters()">
+                <i class="fas fa-undo"></i> Reset
+            </button>
+        </div>
+    </div>
+
+    <div class="history-stats">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-layer-group"></i></div>
+            <div class="stat-info">
+                <h4 id="totalWorkflows">156</h4>
+                <p>total workflows</p>
+            </div>
+        </div>
+        <div class="stat-card success">
+            <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+            <div class="stat-info">
+                <h4 id="completedWorkflows">142</h4>
+                <p>completed</p>
+            </div>
+        </div>
+        <div class="stat-card error">
+            <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
+            <div class="stat-info">
+                <h4 id="failedWorkflows">8</h4>
+                <p>failed</p>
+            </div>
+        </div>
+        <div class="stat-card running">
+            <div class="stat-icon"><i class="fas fa-spinner fa-spin"></i></div>
+            <div class="stat-info">
+                <h4 id="runningWorkflows">6</h4>
+                <p>in progress</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="timeline-container">
+        <div class="timeline-header">
+            <h3><i class="fas fa-stream" style="color: var(--primary);"></i> Execution Timeline</h3>
+            <div class="timeline-controls">
+                <button class="btn-icon" onclick="refreshHistory()" title="Refresh">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <button class="btn-icon" onclick="exportHistory()" title="Export CSV">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="timeline" id="timeline">
+            <div class="loading-spinner" style="margin: 2rem auto;"></div>
+        </div>
+
+        <div class="pagination" id="pagination">
+            <button class="btn-page" onclick="changePage(1)">1</button>
+            <button class="btn-page active" onclick="changePage(2)">2</button>
+            <button class="btn-page" onclick="changePage(3)">3</button>
+            <button class="btn-page" onclick="changePage(4)">4</button>
+            <button class="btn-page">...</button>
+            <button class="btn-page" onclick="changePage(10)"><i class="fas fa-chevron-right"></i></button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentPage = 1;
+    
+    // Mock Data Generator
+    const mockHistory = [
+        {
+            id: "WF-2502-8X92",
+            date: "2025-02-17T10:30:00",
+            status: "completed",
+            channel: "email",
+            icon: "fa-envelope",
+            category: "Enterprise SaaS Outreach",
+            icp: "CTO / VP Engineering",
+            duration: "2.4s",
+            contacts: 47
+        },
+        {
+            id: "WF-2502-7A41",
+            date: "2025-02-17T09:15:00",
+            status: "completed",
+            channel: "linkedin",
+            icon: "fa-linkedin-in",
+            category: "Thought Leadership Post",
+            icp: "Tech Decision Makers",
+            duration: "1.8s",
+            contacts: 1
+        },
+        {
+            id: "WF-2502-3B12",
+            date: "2025-02-16T16:45:00",
+            status: "failed",
+            channel: "call",
+            icon: "fa-phone-alt",
+            category: "High-value Follow-up",
+            icp: "Enterprise Buyers",
+            duration: "0.5s",
+            contacts: 3
+        },
+        {
+            id: "WF-2502-9C55",
+            date: "2025-02-16T14:20:00",
+            status: "running",
+            channel: "email",
+            icon: "fa-paper-plane",
+            category: "Nurturing Campaign V2",
+            icp: "Mid-level Managers",
+            duration: "ongoing",
+            contacts: 156
+        }
+    ];
+
+    function loadHistory() {
+        const timeline = document.getElementById('timeline');
+        timeline.innerHTML = '<div class="loading-spinner" style="margin: 3rem auto;"></div>';
+        
+        setTimeout(() => {
+            timeline.innerHTML = mockHistory.map((item, index) => {
+                const date = new Date(item.date);
+                const formattedDate = date.toLocaleDateString('en-US', { 
+                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+                
+                return `
+                    <div class="timeline-item ${item.status}" style="animation-delay: ${index * 0.15}s">
+                        <div class="timeline-content">
+                            <div class="timeline-header-row">
+                                <div class="workflow-category">
+                                    <span class="workflow-id">${item.id}</span>
+                                    <span>${item.category}</span>
+                                </div>
+                                <span class="workflow-status status-${item.status}">
+                                    ${item.status === 'running' ? '<i class="fas fa-spinner fa-spin"></i>' : ''} ${item.status}
+                                </span>
+                            </div>
+                            
+                            <div class="workflow-details">
+                                <div class="detail-item">
+                                    <div class="detail-label">channel</div>
+                                    <div class="detail-value">
+                                        <i class="fas ${item.icon}" style="color: var(--primary);"></i> ${item.channel}
+                                    </div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">target audience</div>
+                                    <div class="detail-value">${item.icp}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">processing time</div>
+                                    <div class="detail-value">${item.duration}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">contacts engaged</div>
+                                    <div class="detail-value">${item.contacts}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="workflow-meta">
+                                <div>
+                                    <i class="far fa-clock"></i> Executed on ${formattedDate}
+                                </div>
+                                <button class="view-details" onclick="viewWorkflow('${item.id}')">
+                                    Full Audit Log <i class="fas fa-arrow-right" style="margin-left:5px;"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }, 800);
+    }
+
+    function viewWorkflow(id) {
+        showToast(`Fetching audit logs for ${id}...`, 'info');
+    }
+
+    function refreshHistory() {
+        showToast('Syncing with neural core...', 'info');
+        loadHistory();
+    }
+
+    // Init
+    loadHistory();
+</script>
+{% endblock %}

@@ -1,0 +1,449 @@
+{% extends "base.html" %}
+
+{% block title %}Governance{% endblock %}
+{% block page_title %}security & compliance center{% endblock %}
+
+{% block content %}
+<style>
+    /* ===== PAGE LAYOUT ===== */
+    .governance-container {
+        padding: 1rem 0;
+        animation: fadeInUp 0.8s ease;
+    }
+
+    /* ===== STATUS GRID ===== */
+    .status-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .status-card {
+        background: var(--bg-elevated);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid var(--border-soft);
+        border-radius: 24px;
+        padding: 1.8rem;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .status-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-xl);
+        border-color: var(--primary-light);
+    }
+
+    .card-icon {
+        width: 54px; height: 54px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.6rem;
+        margin-bottom: 1.2rem;
+        transition: 0.3s;
+    }
+
+    .status-card:hover .card-icon { transform: scale(1.1) rotate(5deg); }
+
+    .icon-secure { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+    .icon-shield { background: rgba(37, 99, 235, 0.1); color: var(--primary); }
+    .icon-key { background: rgba(124, 58, 237, 0.1); color: var(--secondary); }
+
+    .card-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .card-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .badge-success { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+    
+    .pulse-dot {
+        width: 8px; height: 8px;
+        background: currentColor;
+        border-radius: 50%;
+        animation: pulseStatus 2s infinite;
+    }
+
+    @keyframes pulseStatus {
+        0% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(1.2); }
+        100% { opacity: 1; transform: scale(1); }
+    }
+
+    .checklist {
+        margin-top: 1.2rem;
+        list-style: none;
+        padding: 0;
+    }
+
+    .checklist li {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        padding: 0.5rem 0;
+        border-bottom: 1px dashed var(--border-soft);
+    }
+    .checklist li:last-child { border-bottom: none; }
+    .checklist i { color: var(--success); font-size: 0.9rem; }
+
+    /* ===== AUDIT LOG ===== */
+    .audit-panel {
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-soft);
+        border-radius: 24px;
+        padding: 2rem;
+        box-shadow: var(--shadow-md);
+        margin-bottom: 2.5rem;
+    }
+
+    .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .panel-header h3 {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+    }
+
+    .search-bar {
+        position: relative;
+        width: 320px;
+    }
+
+    .search-bar i {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-tertiary);
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 0.8rem 1rem 0.8rem 2.8rem;
+        border: 1px solid var(--border-soft);
+        border-radius: 12px;
+        background: var(--bg-surface);
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        transition: 0.2s;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px var(--primary-soft);
+        background: var(--bg-card);
+    }
+
+    .action-btn {
+        width: 40px; height: 40px;
+        border-radius: 12px;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-soft);
+        color: var(--text-secondary);
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .action-btn:hover {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+
+    .audit-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .audit-table th {
+        text-align: left;
+        padding: 1rem 1.5rem;
+        color: var(--text-tertiary);
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        border-bottom: 1px solid var(--border-soft);
+        letter-spacing: 0.05em;
+    }
+
+    .audit-table td {
+        padding: 1.2rem 1.5rem;
+        border-bottom: 1px solid var(--border-soft);
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        vertical-align: middle;
+    }
+
+    .audit-table tr:hover td {
+        background: var(--bg-surface);
+        color: var(--text-primary);
+    }
+
+    .hash-code {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.8rem;
+        background: var(--bg-surface);
+        padding: 0.3rem 0.6rem;
+        border-radius: 6px;
+        border: 1px solid var(--border-soft);
+        color: var(--primary);
+    }
+
+    .agent-pill {
+        padding: 0.3rem 0.8rem;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-soft);
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+    }
+
+    /* ===== DATA FLOW MAP ===== */
+    .flow-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+        position: relative;
+    }
+
+    .flow-card {
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-soft);
+        border-radius: 20px;
+        padding: 1.5rem;
+        text-align: center;
+        transition: 0.3s;
+        position: relative;
+    }
+
+    .flow-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-lg);
+        border-color: var(--primary);
+    }
+
+    .flow-icon {
+        font-size: 2rem;
+        color: var(--primary);
+        margin-bottom: 1rem;
+    }
+
+    .flow-title {
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 0.3rem;
+    }
+
+    .flow-desc {
+        font-size: 0.8rem;
+        color: var(--text-tertiary);
+    }
+
+    /* Connecting Lines */
+    .flow-card:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        right: -1.5rem;
+        width: 1.5rem;
+        height: 2px;
+        background: var(--border-soft);
+        z-index: 0;
+    }
+
+    /* Animation */
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media (max-width: 1024px) {
+        .status-grid, .flow-grid { grid-template-columns: 1fr; }
+        .flow-card::after { display: none; }
+    }
+</style>
+
+<div class="governance-container">
+    
+    <div class="status-grid">
+        <div class="status-card">
+            <div class="card-icon icon-secure"><i class="fas fa-check-double"></i></div>
+            <h4 class="card-title">Compliance Status</h4>
+            <div class="card-badge badge-success"><span class="pulse-dot"></span> Fully Compliant</div>
+            <ul class="checklist">
+                <li><i class="fas fa-shield-alt"></i> GDPR & CCPA Ready</li>
+                <li><i class="fas fa-file-contract"></i> SOC2 Type II Certified</li>
+                <li><i class="fas fa-lock"></i> ISO 27001 Verified</li>
+            </ul>
+        </div>
+
+        <div class="status-card">
+            <div class="card-icon icon-shield"><i class="fas fa-shield-virus"></i></div>
+            <h4 class="card-title">Security Posture</h4>
+            <div class="card-badge badge-success"><span class="pulse-dot"></span> 99.9% Secure</div>
+            <ul class="checklist">
+                <li><i class="fas fa-fingerprint"></i> MFA Authentication</li>
+                <li><i class="fas fa-user-secret"></i> Penetration Tested</li>
+                <li><i class="fas fa-bug"></i> Real-time Threat Detection</li>
+            </ul>
+        </div>
+
+        <div class="status-card">
+            <div class="card-icon icon-key"><i class="fas fa-key"></i></div>
+            <h4 class="card-title">Encryption Standards</h4>
+            <div class="card-badge badge-success"><span class="pulse-dot"></span> AES-256 Active</div>
+            <ul class="checklist">
+                <li><i class="fas fa-database"></i> Data at Rest Encrypted</li>
+                <li><i class="fas fa-network-wired"></i> TLS 1.3 in Transit</li>
+                <li><i class="fas fa-sync"></i> 30-Day Key Rotation</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="audit-panel">
+        <div class="panel-header">
+            <h3><i class="fas fa-history" style="color: var(--primary);"></i> Immutable Audit Trail</h3>
+            <div style="display: flex; gap: 1rem;">
+                <div class="search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" class="search-input" placeholder="Search by hash, user, or event..." id="auditSearch">
+                </div>
+                <button class="action-btn" title="Refresh" onclick="refreshAudit()"><i class="fas fa-sync-alt"></i></button>
+                <button class="action-btn" title="Export CSV" onclick="exportAudit()"><i class="fas fa-download"></i></button>
+            </div>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table class="audit-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Actor</th>
+                        <th>Event Action</th>
+                        <th>Resource ID</th>
+                        <th>Integrity Hash</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="auditBody">
+                    <tr>
+                        <td>2026-02-18 10:45:22</td>
+                        <td><span class="agent-pill">Agent 1</span></td>
+                        <td>CLASSIFICATION_COMPLETE</td>
+                        <td>workflow_892</td>
+                        <td><span class="hash-code">a1b2c3d4...</span></td>
+                        <td style="color: var(--success); font-weight: 600;">Success</td>
+                    </tr>
+                    <tr>
+                        <td>2026-02-18 10:42:15</td>
+                        <td><span class="agent-pill">System</span></td>
+                        <td>KEY_ROTATION</td>
+                        <td>kms_master_key</td>
+                        <td><span class="hash-code">f9e8d7c6...</span></td>
+                        <td style="color: var(--success); font-weight: 600;">Verified</td>
+                    </tr>
+                    <tr>
+                        <td>2026-02-18 09:30:00</td>
+                        <td><span class="agent-pill">User: Prajwal</span></td>
+                        <td>EXPORT_REPORT</td>
+                        <td>analytics_csv</td>
+                        <td><span class="hash-code">b5n7m9k2...</span></td>
+                        <td style="color: var(--success); font-weight: 600;">Authorized</td>
+                    </tr>
+                    <tr>
+                        <td>2026-02-18 08:15:44</td>
+                        <td><span class="agent-pill">Agent 4</span></td>
+                        <td>CONTENT_GEN</td>
+                        <td>email_draft_44</td>
+                        <td><span class="hash-code">x1y2z3a4...</span></td>
+                        <td style="color: var(--success); font-weight: 600;">Success</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="audit-panel">
+        <div class="panel-header">
+            <h3><i class="fas fa-project-diagram" style="color: var(--secondary);"></i> Secure Data Lifecycle</h3>
+        </div>
+        <div class="flow-grid">
+            <div class="flow-card">
+                <i class="fas fa-keyboard flow-icon"></i>
+                <div class="flow-title">User Input</div>
+                <div class="flow-desc">TLS 1.3 Encrypted Ingestion</div>
+            </div>
+            <div class="flow-card">
+                <i class="fas fa-brain flow-icon"></i>
+                <div class="flow-title">Agent Processing</div>
+                <div class="flow-desc">Isolated Execution Environment</div>
+            </div>
+            <div class="flow-card">
+                <i class="fas fa-database flow-icon"></i>
+                <div class="flow-title">Data Storage</div>
+                <div class="flow-desc">AES-256 Encrypted Persistence</div>
+            </div>
+            <div class="flow-card">
+                <i class="fas fa-trash-alt flow-icon"></i>
+                <div class="flow-title">Retention Policy</div>
+                <div class="flow-desc">Auto-Purge after 90 Days</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function refreshAudit() {
+        const btn = event.currentTarget.querySelector('i');
+        btn.classList.add('fa-spin');
+        showToast('Syncing with blockchain ledger...', 'info');
+        setTimeout(() => {
+            btn.classList.remove('fa-spin');
+            showToast('Audit logs updated', 'success');
+        }, 1500);
+    }
+
+    function exportAudit() {
+        showToast('Generating encrypted audit report...', 'info');
+        setTimeout(() => {
+            showToast('Download started: audit_log_2026.enc', 'success');
+        }, 2000);
+    }
+
+    document.getElementById('auditSearch').addEventListener('input', (e) => {
+        // Mock search feedback
+        console.log("Searching:", e.target.value);
+    });
+</script>
+{% endblock %}

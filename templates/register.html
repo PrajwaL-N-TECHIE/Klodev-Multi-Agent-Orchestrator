@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Klodev Apex | Create Account</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #e0e7ff 0%, #f1f5f9 100%);
+            font-family: 'Space Grotesk', sans-serif;
+            padding: 3rem 1rem; /* Increased padding to allow healthy scrolling */
+            position: relative;
+            overflow-x: hidden; /* Allows vertical scrolling, hides horizontal */
+            animation: fadeInPage 0.8s ease-out;
+        }
+
+        @keyframes fadeInPage {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        /* Subtle Background Atmosphere */
+        .glow-orbit {
+            position: fixed; /* Changed to fixed so it stays in place when scrolling */
+            width: 700px;
+            height: 700px;
+            background: radial-gradient(circle at 40% 50%, rgba(59, 130, 246, 0.12), transparent 60%);
+            border-radius: 50%;
+            top: -200px;
+            right: -200px;
+            filter: blur(80px);
+            z-index: 0;
+        }
+        
+        .glow-orbit-2 {
+            position: fixed; /* Changed to fixed */
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle at 60% 40%, rgba(99, 102, 241, 0.08), transparent 70%);
+            border-radius: 50%;
+            bottom: -250px;
+            left: -150px;
+            filter: blur(80px);
+            z-index: 0;
+        }
+
+        /* Premium Wide Split-Screen Card */
+        .register-container {
+            display: flex;
+            width: 900px;
+            background: #ffffff;
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.08);
+            overflow: hidden;
+            position: relative;
+            z-index: 10;
+            animation: slideUpCard 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        @keyframes slideUpCard {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* LEFT PANEL: Branding & Professional Biometrics */
+        .brand-panel {
+            flex: 1;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+            padding: 60px 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+            position: relative;
+        }
+
+        /* Subtle mesh overlay */
+        .brand-panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at center, rgba(255,255,255,0.05) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .biometric-scanner {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            margin-bottom: 35px;
+        }
+
+        .fingerprint {
+            width: 100%;
+            height: 100%;
+            fill: rgba(255, 255, 255, 0.15);
+        }
+
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: #60a5fa;
+            box-shadow: 0 0 10px 3px rgba(96, 165, 250, 0.4);
+            border-radius: 50%;
+            animation: scan 2.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes scan {
+            0% { top: 5%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 95%; opacity: 0; }
+        }
+
+        .brand-panel h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            letter-spacing: -0.02em;
+            z-index: 1;
+        }
+
+        .brand-panel p {
+            font-size: 0.95rem;
+            color: #cbd5e1;
+            line-height: 1.6;
+            z-index: 1;
+            font-weight: 400;
+        }
+
+        /* RIGHT PANEL: Clean Enterprise Form */
+        .form-panel {
+            flex: 1.2;
+            padding: 40px 60px;
+            background: #ffffff;
+        }
+
+        .title {
+            color: #0f172a;
+            font-size: 1.7rem; 
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 30px;
+        }
+        
+        .title span {
+            display: block;
+            font-size: 0.85rem; 
+            font-weight: 600;
+            color: #64748b;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-top: 6px;
+        }
+
+        /* Input Layout */
+        .input-group {
+            margin-bottom: 20px; 
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #475569;
+            margin-bottom: 8px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 14px 18px; 
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1rem;
+            color: #0f172a;
+            font-family: inherit;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        /* Interactive Role Selector Cards - PREMIUM UX */
+        .role-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .role-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 12px 18px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #ffffff;
+        }
+
+        .role-card:hover {
+            border-color: #cbd5e1;
+            background: #f8fafc;
+        }
+
+        .role-card input[type="radio"] {
+            display: none; 
+        }
+
+        .role-icon {
+            width: 40px;
+            height: 40px;
+            background: #f1f5f9;
+            color: #64748b;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 16px;
+            font-size: 1.1rem;
+            transition: 0.2s;
+        }
+
+        .role-details h4 {
+            font-size: 0.95rem;
+            color: #0f172a;
+            margin: 0 0 4px 0;
+            font-weight: 600;
+        }
+
+        .role-details p {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin: 0;
+            line-height: 1.3;
+        }
+
+        /* Active State for Role Card */
+        .role-card.active {
+            border-color: #3b82f6;
+            background: #eff6ff;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
+        }
+
+        .role-card.active .role-icon {
+            background: #3b82f6;
+            color: white;
+        }
+
+        /* Dynamic Auth Key Group */
+        #authKeyGroup {
+            background: rgba(239, 68, 68, 0.05);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            animation: fadeInPage 0.3s ease-out;
+        }
+
+        #authKeyGroup label {
+            color: #b91c1c;
+        }
+
+        #authKeyGroup .input-field:focus {
+            border-color: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+        }
+
+        /* Submit Button */
+        .btn-submit {
+            width: 100%;
+            padding: 16px; 
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.05rem; 
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 10px;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+        }
+
+        .btn-submit:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+        }
+
+        .link-text {
+            display: block;
+            text-align: center;
+            margin-top: 24px;
+            font-size: 0.9rem;
+            color: #64748b;
+            text-decoration: none;
+            font-weight: 500;
+            transition: 0.2s;
+        }
+        
+        .link-text:hover { 
+            color: #2563eb; 
+            text-decoration: underline;
+        }
+
+        .alert {
+            background: #fee2e2; color: #ef4444; padding: 12px 16px;
+            border-radius: 8px; text-align: center; font-size: 0.9rem;
+            font-weight: 500; margin-bottom: 24px; border: 1px solid #fca5a5;
+        }
+
+        @media (max-width: 768px) {
+            .register-container { flex-direction: column; width: 100%; max-width: 420px; }
+            .brand-panel { padding: 40px 20px; }
+            .biometric-scanner { width: 80px; height: 80px; margin-bottom: 20px; }
+            .form-panel { padding: 35px 25px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="glow-orbit"></div>
+    <div class="glow-orbit-2"></div>
+
+    <div class="register-container">
+        
+        <div class="brand-panel">
+            <div class="biometric-scanner">
+                <div class="scan-line"></div>
+                <svg class="fingerprint" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v4h-2zm0 6h2v2h-2z"/>
+                    <path d="M17 10c0-2.76-2.24-5-5-5s-5 2.24-5 5v1.5c0 .28.22.5.5.5s.5-.22.5-.5V10c0-2.21 1.79-4 4-4s4 1.79 4 4v1.5c0 .28.22.5.5.5s.5-.22.5-.5V10z"/>
+                    <path d="M14.5 12c0-1.38-1.12-2.5-2.5-2.5S9.5 10.62 9.5 12v3.5c0 .28.22.5.5.5s.5-.22.5-.5V12c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v3.5c0 .28.22.5.5.5s.5-.22.5-.5V12z"/>
+                </svg>
+            </div>
+            <h2>Klodev Apex</h2>
+            <p>Intelligent Multi-Agent Orchestration.<br><br>Deploy autonomous agents, streamline enterprise workflows, and scale securely.</p>
+        </div>
+
+        <div class="form-panel">
+            <div class="title">Create Account <span>Setup your workspace credentials</span></div>
+
+            {% if error %} 
+                <div class="alert"><i class="fas fa-exclamation-triangle"></i> {{ error }}</div> 
+            {% endif %}
+
+            <form action="{{ url_for('register') }}" method="POST">
+                <div class="input-group">
+                    <label>Username</label>
+                    <input type="text" name="username" class="input-field" placeholder="Choose a unique username" autocomplete="off" required>
+                </div>
+                
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" name="password" class="input-field" placeholder="Create a secure password" required>
+                </div>
+
+                <div class="input-group">
+                    <label>Account Role</label>
+                    <div class="role-grid">
+                        
+                        <label class="role-card active" onclick="selectRole(this)">
+                            <input type="radio" name="role" value="admin" checked>
+                            <div class="role-icon"><i class="fas fa-shield-alt"></i></div>
+                            <div class="role-details">
+                                <h4>System Administrator</h4>
+                                <p>Full platform access and agent configuration</p>
+                            </div>
+                        </label>
+
+                        <label class="role-card" onclick="selectRole(this)">
+                            <input type="radio" name="role" value="marketing_user">
+                            <div class="role-icon"><i class="fas fa-chart-line"></i></div>
+                            <div class="role-details">
+                                <h4>Marketing User</h4>
+                                <p>Standard campaign deployment & analytics</p>
+                            </div>
+                        </label>
+
+                        <label class="role-card" onclick="selectRole(this)">
+                            <input type="radio" name="role" value="viewer">
+                            <div class="role-icon"><i class="fas fa-glasses"></i></div>
+                            <div class="role-details">
+                                <h4>Guest Viewer</h4>
+                                <p>Read-only access to execution telemetry</p>
+                            </div>
+                        </label>
+
+                    </div>
+                </div>
+
+                <div class="input-group" id="authKeyGroup">
+                    <label>Enterprise Encryption Key <i class="fas fa-lock" style="margin-left:4px;"></i></label>
+                    <input type="password" id="authKeyInput" name="encryption_key" class="input-field" placeholder="Required for privileged roles" required>
+                    <div style="font-size: 0.75rem; color: #64748b; margin-top: 8px;">
+                        <i class="fas fa-info-circle"></i> Use system demo key: <strong>demo</strong>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit">Create Account</button>
+            </form>
+
+            <a href="{{ url_for('login') }}" class="link-text">Already have an account? Sign in here.</a>
+        </div>
+
+    </div>
+
+    <script>
+        function selectRole(selectedCard) {
+            // Remove active visual class
+            const cards = document.querySelectorAll('.role-card');
+            cards.forEach(card => card.classList.remove('active'));
+            selectedCard.classList.add('active');
+            
+            // Check the hidden radio button physically
+            const radio = selectedCard.querySelector('input[type="radio"]');
+            radio.checked = true;
+
+            // Security Logic: Show/Hide Encryption Key
+            const authKeyGroup = document.getElementById('authKeyGroup');
+            const authKeyInput = document.getElementById('authKeyInput');
+
+            if (radio.value === 'admin' || radio.value === 'marketing_user') {
+                authKeyGroup.style.display = 'block';
+                authKeyInput.required = true; // Block submission if empty
+            } else {
+                authKeyGroup.style.display = 'none';
+                authKeyInput.required = false; // Allow submission for Viewers
+                authKeyInput.value = ''; // Clear value
+            }
+        }
+    </script>
+</body>
+</html>

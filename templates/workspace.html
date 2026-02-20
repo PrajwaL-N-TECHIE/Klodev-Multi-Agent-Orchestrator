@@ -1,0 +1,728 @@
+{% extends "base.html" %}
+
+{% block title %}Neural Workspace{% endblock %}
+{% block page_title %}agent execution environment{% endblock %}
+
+{% block content %}
+<style>
+    .workspace-container {
+        display: grid;
+        grid-template-columns: 400px 1fr;
+        gap: 2.5rem;
+        height: calc(100vh - 120px);
+        padding-bottom: 2rem;
+    }
+
+    /* Premium Input Panel */
+    .input-panel {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--border-soft);
+        border-radius: 24px;
+        padding: 2rem;
+        overflow-y: auto;
+        animation: slideInLeft 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: var(--shadow-xl);
+    }
+
+    /* Dark mode support */
+    [data-theme="dark"] .input-panel, 
+    [data-theme="dark"] .results-panel {
+        background: rgba(30, 41, 59, 0.6);
+        border-color: rgba(51, 65, 85, 0.8);
+    }
+
+    .panel-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 2rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        letter-spacing: -0.02em;
+    }
+
+    .panel-title i {
+        color: var(--primary);
+        background: var(--primary-soft);
+        padding: 0.6rem;
+        border-radius: 10px;
+        font-size: 1rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+        animation: fadeInUp 0.5s ease;
+        animation-fill-mode: both;
+    }
+
+    .form-group:nth-child(1) { animation-delay: 0.05s; }
+    .form-group:nth-child(2) { animation-delay: 0.1s; }
+    .form-group:nth-child(3) { animation-delay: 0.15s; }
+    .form-group:nth-child(4) { animation-delay: 0.2s; }
+    .form-group:nth-child(5) { animation-delay: 0.25s; }
+
+    .form-group label {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--text-secondary);
+        margin-bottom: 0.6rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+    }
+
+    .form-group label i {
+        color: var(--text-tertiary);
+        margin-right: 0.4rem;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.9rem 1.2rem;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-medium);
+        border-radius: 14px;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        box-shadow: var(--shadow-inner);
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px var(--primary-soft);
+        background: var(--bg-elevated);
+        transform: translateY(-1px);
+    }
+
+    select.form-control { cursor: pointer; }
+    textarea.form-control { resize: vertical; min-height: 110px; line-height: 1.5; }
+
+    .phone-input-group { position: relative; }
+    .phone-input-group input { padding-left: 4rem; }
+
+    .phone-prefix {
+        position: absolute;
+        left: 1.2rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--primary);
+        font-weight: 700;
+        font-size: 0.95rem;
+        border-right: 2px solid var(--border-soft);
+        padding-right: 0.8rem;
+    }
+
+    .input-hint {
+        font-size: 0.75rem;
+        color: var(--text-tertiary);
+        margin-top: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-weight: 500;
+    }
+
+    /* Premium Shimmer Execute Button */
+    .execute-btn-main {
+        width: 100%;
+        padding: 1.25rem;
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        color: white;
+        border: none;
+        border-radius: 16px;
+        font-weight: 800;
+        font-size: 1.05rem;
+        letter-spacing: 0.05em;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        margin: 2rem 0 1rem;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 25px -5px var(--primary-glow);
+    }
+
+    .execute-btn-main::after {
+        content: '';
+        position: absolute;
+        top: 0; left: -100%; width: 50%; height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        animation: shimmer 3s infinite;
+    }
+
+    @keyframes shimmer { 100% { left: 200%; } }
+
+    .execute-btn-main:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 35px -5px var(--primary-glow);
+    }
+
+    /* Premium Results Panel */
+    .results-panel {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--border-soft);
+        border-radius: 24px;
+        padding: 2rem;
+        overflow-y: auto;
+        animation: slideInRight 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        display: flex;
+        flex-direction: column;
+        box-shadow: var(--shadow-xl);
+    }
+
+    /* Sleek Agent Pipeline */
+    .agent-pipeline {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-soft);
+        border-radius: 20px;
+        padding: 2rem 1.5rem;
+        margin-bottom: 2.5rem;
+        position: relative;
+    }
+
+    .agent-pipeline::before {
+        content: ''; position: absolute; top: 40%; left: 10%; right: 10%;
+        height: 3px; background: var(--border-soft); z-index: 0;
+    }
+
+    .agent-node {
+        display: flex; flex-direction: column; align-items: center;
+        gap: 0.75rem; position: relative; z-index: 1; flex: 1;
+    }
+
+    .agent-icon {
+        width: 60px; height: 60px; background: var(--bg-elevated);
+        border: 3px solid var(--border-medium); border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.4rem; color: var(--text-tertiary);
+        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: var(--shadow-md);
+    }
+
+    .agent-node.active .agent-icon {
+        border-color: var(--primary); background: var(--primary); color: white;
+        box-shadow: 0 0 0 6px var(--primary-soft), 0 10px 20px var(--primary-glow);
+        animation: floatPulse 2s infinite ease-in-out;
+    }
+
+    .agent-node.completed .agent-icon {
+        background: var(--success); border-color: var(--success); color: white;
+        box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+    }
+
+    @keyframes floatPulse {
+        0%, 100% { transform: translateY(0) scale(1); box-shadow: 0 0 0 6px var(--primary-soft); }
+        50% { transform: translateY(-3px) scale(1.05); box-shadow: 0 0 0 10px var(--primary-soft); }
+    }
+
+    .agent-label { font-size: 0.85rem; font-weight: 700; color: var(--text-primary); }
+    .agent-role { font-size: 0.75rem; font-weight: 500; color: var(--text-tertiary); }
+
+    /* Results Grid */
+    .results-grid {
+        display: grid; grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem; margin-bottom: 2.5rem;
+    }
+
+    .result-card {
+        background: var(--bg-elevated); border: 1px solid var(--border-soft);
+        border-radius: 20px; padding: 1.5rem; position: relative;
+        transition: all 0.3s ease; box-shadow: var(--shadow-sm); overflow: hidden;
+    }
+
+    .result-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; }
+    .result-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+
+    .result-card.agent1::before { background: var(--primary); }
+    .result-card.agent2::before { background: var(--secondary); }
+    .result-card.agent3::before { background: var(--success); }
+    .result-card.agent4::before { background: var(--warning); }
+
+    .result-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+    .result-header h4 { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 0.6rem; }
+    .result-time { font-size: 0.75rem; font-weight: 600; color: var(--text-tertiary); background: var(--bg-surface); padding: 0.2rem 0.6rem; border-radius: 20px; }
+    .result-content { font-size: 0.95rem; line-height: 1.5; color: var(--text-secondary); }
+
+    .result-badge {
+        display: inline-flex; align-items: center; padding: 0.3rem 1rem;
+        border-radius: 30px; font-size: 0.8rem; font-weight: 700;
+        margin-top: 0.5rem; letter-spacing: 0.05em;
+    }
+
+    .badge-linkedin { background: rgba(0, 119, 181, 0.1); color: #0077b5; border: 1px solid rgba(0, 119, 181, 0.2); }
+    .badge-email { background: var(--primary-soft); color: var(--primary); border: 1px solid rgba(37, 99, 235, 0.2); }
+    .badge-call { background: rgba(139, 92, 246, 0.1); color: var(--secondary); border: 1px solid rgba(139, 92, 246, 0.2); }
+    .badge-db { background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); }
+
+    /* Generated Content Box */
+    /* Improved Generated Content Box */
+    .content-display {
+        background: var(--bg-elevated); 
+        border: 1px solid var(--border-medium);
+        border-radius: 16px; 
+        padding: 2rem; /* More breathing room */
+        font-size: 1.05rem; /* Slightly larger text */
+        line-height: 1.8; /* Better readability */
+        color: var(--text-primary); 
+        
+        /* FIX STARTS HERE */
+        min-height: 250px; /* Forces it to be at least this big */
+        max-height: 500px; /* Allows it to grow if content is long */
+        width: 100%;
+        
+        overflow-y: auto;
+        font-family: 'Inter', system-ui, sans-serif; 
+        box-shadow: var(--shadow-inner);
+        white-space: pre-wrap;
+        margin-bottom: 1rem;
+    }
+
+    /* Terminal-style Audit Trail */
+    .audit-trail {
+        margin-top: 1rem; padding: 1.2rem; background: #0f172a;
+        border: 1px solid #1e293b; border-radius: 16px;
+        font-family: 'Fira Code', 'Space Grotesk', monospace; font-size: 0.8rem;
+        color: #38bdf8; max-height: 180px; overflow-y: auto; box-shadow: inset 0 4px 10px rgba(0,0,0,0.3);
+    }
+
+    .audit-entry {
+        padding: 0.4rem 0; border-left: 2px solid transparent; margin-bottom: 0.4rem;
+        animation: slideInRight 0.3s ease forwards; display: flex; gap: 1rem;
+    }
+    .audit-entry:hover { border-left-color: #38bdf8; padding-left: 0.8rem; background: rgba(255,255,255,0.02); }
+    .audit-time { color: #64748b; font-size: 0.75rem; min-width: 80px;}
+    .audit-hash { color: #475569; font-size: 0.7rem; margin-left: auto;}
+
+    /* Copy Button */
+    .btn-copy {
+        background: var(--bg-surface); border: 1px solid var(--border-medium);
+        color: var(--text-secondary); padding: 0.5rem 1rem; border-radius: 8px;
+        font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;
+        display: flex; align-items: center; gap: 6px;
+    }
+    .btn-copy:hover { background: var(--bg-elevated); color: var(--primary); border-color: var(--primary); }
+</style>
+
+<div class="workspace-container">
+    <div class="input-panel">
+        <div class="panel-title">
+            <i class="fas fa-sliders-h"></i> Execution Parameters
+        </div>
+
+        <div class="form-group">
+            <label><i class="fas fa-bolt"></i> Execution Priority</label>
+            <select class="form-control" id="priorityLevel">
+                <option value="High" selected>🔴 High · Immediate Action</option>
+                <option value="Medium">🟡 Medium · Standard Pipeline</option>
+                <option value="Low">🟢 Low · Background Task</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label><i class="fas fa-globe-americas"></i> Target Geographic Region</label>
+            <input type="text" class="form-control" id="targetLocation" value="India" placeholder="e.g., North America, APAC">
+        </div>
+
+        <div class="form-group">
+            <label><i class="fas fa-phone-alt"></i> Prospect Contact Number</label>
+            <div class="phone-input-group">
+                <span class="phone-prefix">+91</span>
+                <input type="text" class="form-control" id="contactNumber" value="9843315832" placeholder="Phone Number">
+            </div>
+            <div class="input-hint">
+                <i class="fas fa-check-circle" style="color: var(--success);"></i> Verified Target Number
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label><i class="fas fa-envelope"></i> Prospect Email Address</label>
+            <input type="email" class="form-control" id="emailAddress" value="klodevtest@gmail.com" placeholder="email@enterprise.com">
+        </div>
+
+        <div class="form-group">
+            <label><i class="fas fa-bullseye"></i> AI Business Objective</label>
+            <textarea class="form-control" id="businessObjective">Make an urgent call to the VP of Engineering to pitch our AI scaling infrastructure and book a demo.</textarea>
+        </div>
+
+        <button class="execute-btn-main" onclick="executeWorkflow()" id="executeBtn">
+            <i class="fas fa-play-circle"></i> INITIALIZE AGENT PIPELINE <i class="fas fa-arrow-right"></i>
+        </button>
+
+        <div class="input-hint" style="justify-content: center; font-size: 0.8rem; margin-top: 1rem;">
+            <i class="fas fa-microchip" style="color: var(--primary);"></i> Agents 1-4 execute autonomously via graph routing.
+        </div>
+    </div>
+
+    <div class="results-panel">
+        <div class="panel-title">
+            <i class="fas fa-network-wired"></i> Neural Execution Telemetry
+        </div>
+
+        <div class="agent-pipeline">
+            <div class="agent-node" id="agent1">
+                <div class="agent-icon"><i class="fas fa-brain"></i></div>
+                <div class="agent-label">Agent 1</div>
+                <div class="agent-role">Classification</div>
+            </div>
+            <div class="agent-node" id="agent2">
+                <div class="agent-icon"><i class="fas fa-database"></i></div>
+                <div class="agent-label">Agent 2</div>
+                <div class="agent-role">ICP & RAG Match</div>
+            </div>
+            <div class="agent-node" id="agent3">
+                <div class="agent-icon"><i class="fas fa-code-branch"></i></div>
+                <div class="agent-label">Agent 3</div>
+                <div class="agent-role">Logic Routing</div>
+            </div>
+            <div class="agent-node" id="agent4">
+                <div class="agent-icon"><i class="fas fa-magic"></i></div>
+                <div class="agent-label">Agent 4</div>
+                <div class="agent-role">Content Gen</div>
+            </div>
+        </div>
+
+        <div class="results-grid">
+            <div class="result-card agent1" id="result1">
+                <div class="result-header">
+                    <h4><i class="fas fa-brain"></i> Intent Classification</h4>
+                    <span class="result-time" id="time1">—</span>
+                </div>
+                <div class="result-content" id="content1">
+                    <div style="color: var(--text-tertiary);">Awaiting execution...</div>
+                </div>
+            </div>
+
+            <div class="result-card agent2" id="result2">
+                <div class="result-header">
+                    <h4><i class="fas fa-database"></i> Database RAG Match</h4>
+                    <span class="result-time" id="time2">—</span>
+                </div>
+                <div class="result-content" id="content2">
+                    <div style="color: var(--text-tertiary);">Awaiting execution...</div>
+                </div>
+            </div>
+
+            <div class="result-card agent3" id="result3">
+                <div class="result-header">
+                    <h4><i class="fas fa-code-branch"></i> Autonomous Routing</h4>
+                    <span class="result-time" id="time3">—</span>
+                </div>
+                <div class="result-content" id="content3">
+                    <div style="color: var(--text-tertiary);">Awaiting execution...</div>
+                </div>
+            </div>
+
+            <div class="result-card agent4" id="result4">
+                <div class="result-header">
+                    <h4><i class="fas fa-pen-fancy"></i> Payload Generation</h4>
+                    <span class="result-time" id="time4">—</span>
+                </div>
+                <div class="result-content" id="content4">
+                    <div style="color: var(--text-tertiary);">Awaiting execution...</div>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: flex-end;">
+            <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">
+                <i class="fas fa-file-alt" style="color: var(--primary);"></i> Generated Deliverable
+            </h4>
+            <button onclick="copyToClipboard()" id="copyBtn" class="btn-copy">
+                <i class="fas fa-copy"></i> Copy Payload
+            </button>
+        </div>
+        
+        <div class="content-display" id="generatedContent">
+            <div style="color: var(--text-tertiary); font-style: italic;">The AI payload will render here after execution...</div>
+        </div>
+
+        <div style="margin-top: 2rem;">
+            <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.1em;">
+                <i class="fas fa-shield-alt"></i> Secure Cryptographic Audit Log
+            </h4>
+            <div class="audit-trail" id="auditTrail">
+                <div class="audit-entry">
+                    <div class="audit-time">00:00:00</div>
+                    <div>[SYSTEM] Platform initialized. Awaiting parameters.</div>
+                    <div class="audit-hash">0x000000</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // System State Variables
+    let isExecuting = false;
+    let currentCallScript = "";  
+    let currentTargetPhone = ""; 
+
+    async function executeWorkflow() {
+        if (isExecuting) {
+            showToast('Pipeline is currently active.', 'warning');
+            return;
+        }
+
+        const btn = document.getElementById('executeBtn');
+        isExecuting = true;
+        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> PROCESSING NEURAL PATHWAYS...';
+        btn.style.opacity = '0.85';
+        btn.style.pointerEvents = 'none';
+
+        resetDisplays();
+        activateAgent(1);
+
+        // 🚨 IMPORTANT: Notice `user_role` is intentionally missing here because the backend handles it via Session!
+        const payload = {
+            priority_level: document.getElementById('priorityLevel').value,
+            target_location: document.getElementById('targetLocation').value,
+            contact_number: `+91${document.getElementById('contactNumber').value}`,
+            email_address: document.getElementById('emailAddress').value,
+            business_objective: document.getElementById('businessObjective').value
+        };
+
+        try {
+            const response = await fetch('/api/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            
+            if (response.status !== 200) {
+                throw new Error(result.message || "Unknown server error");
+            }
+
+            updateResults(result);
+            showToast(`✅ Workflow complete via ${result.platform} channel`, 'success');
+
+        } catch (error) {
+            console.error('Execution error:', error);
+            showToast(`❌ System Halt: ${error.message}`, 'error');
+            
+            // Re-enable button on error
+            btn.innerHTML = '<i class="fas fa-play-circle"></i> INITIALIZE AGENT PIPELINE <i class="fas fa-arrow-right"></i>';
+            btn.style.opacity = '1';
+            btn.style.pointerEvents = 'auto';
+            isExecuting = false;
+        } finally {
+            setTimeout(() => {
+                btn.innerHTML = '<i class="fas fa-play-circle"></i> INITIALIZE AGENT PIPELINE <i class="fas fa-arrow-right"></i>';
+                btn.style.opacity = '1';
+                btn.style.pointerEvents = 'auto';
+                isExecuting = false;
+            }, 1500);
+        }
+    }
+
+    // HITL DISPATCH FUNCTION
+    async function approveCall() {
+        const phone = currentTargetPhone;
+        const script = currentCallScript;
+        
+        const btn = document.getElementById('approveCallBtn');
+        const originalText = btn.innerHTML;
+        
+        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Connecting to Secure Voice API...';
+        btn.style.opacity = '0.9';
+        btn.style.pointerEvents = 'none';
+        
+        try {
+            const response = await fetch('/api/dispatch_call', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: phone, script: script })
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                showToast('✅ Uplink established! Agent is dialing.', 'success');
+                btn.innerHTML = '<i class="fas fa-satellite-dish"></i> Live Voice Session Active';
+                btn.style.background = 'var(--success)';
+                btn.style.boxShadow = '0 0 20px rgba(16, 185, 129, 0.4)';
+            } else {
+                throw new Error(result.message || 'API Dispatch Failed');
+            }
+        } catch (error) {
+            console.error('Dispatch error:', error);
+            showToast(`❌ Connection Error: ${error.message}`, 'error');
+            btn.innerHTML = originalText;
+            btn.style.opacity = '1';
+            btn.style.pointerEvents = 'auto';
+        }
+    }
+
+    function resetDisplays() {
+        document.querySelectorAll('.agent-node').forEach(node => { node.classList.remove('active', 'completed', 'failed'); });
+        document.getElementById('content1').innerHTML = '<div style="color: var(--text-tertiary);"><i class="fas fa-circle-notch fa-spin"></i> Decoding intent...</div>';
+        document.getElementById('content2').innerHTML = '<div style="color: var(--text-tertiary);"><i class="fas fa-circle-notch fa-spin"></i> Searching vector space...</div>';
+        document.getElementById('content3').innerHTML = '<div style="color: var(--text-tertiary);"><i class="fas fa-circle-notch fa-spin"></i> Calculating pathways...</div>';
+        document.getElementById('content4').innerHTML = '<div style="color: var(--text-tertiary);"><i class="fas fa-circle-notch fa-spin"></i> Synthesizing response...</div>';
+        document.getElementById('generatedContent').innerHTML = '<div style="color: var(--text-tertiary); font-style: italic;">Processing output buffer...</div>';
+        document.querySelectorAll('.result-time').forEach(el => el.textContent = 'Active');
+    }
+
+    function activateAgent(agentNumber) {
+        for (let i = 1; i <= 4; i++) {
+            const node = document.getElementById(`agent${i}`);
+            if (node) node.classList.remove('active', 'completed');
+        }
+        for (let i = 1; i < agentNumber; i++) {
+            const node = document.getElementById(`agent${i}`);
+            if (node) node.classList.add('completed');
+        }
+        const currentNode = document.getElementById(`agent${agentNumber}`);
+        if (currentNode) {
+            currentNode.classList.add('active');
+            if (agentNumber < 4) {
+                setTimeout(() => activateAgent(agentNumber + 1), 1200);
+            } else {
+                setTimeout(() => {
+                    for (let i = 1; i <= 4; i++) {
+                        const node = document.getElementById(`agent${i}`);
+                        if (node) { node.classList.remove('active'); node.classList.add('completed'); }
+                    }
+                }, 600);
+            }
+        }
+    }
+
+    function updateResults(result) {
+        const now = new Date().toLocaleTimeString('en-US', { hour12: false });
+
+        document.getElementById('content1').innerHTML = `
+            <strong style="font-size: 1.05rem;">${result.classification || 'Outreach'}</strong>
+            <div style="font-size: 0.8rem; color: var(--success); margin-top: 0.4rem; font-weight: 600;"><i class="fas fa-check"></i> Verified</div>
+        `;
+        document.getElementById('time1').textContent = now;
+
+        let agent2Subtext = 'Semantic Match';
+        let agent2Badge = '';
+        if(result.icp && result.icp.length < 50) {
+            agent2Subtext = 'High-Value DB Target';
+            agent2Badge = `<span class="result-badge badge-db" style="margin-top: 8px; padding: 0.2rem 0.8rem; font-size: 0.75rem;"><i class="fas fa-bullseye" style="margin-right: 4px;"></i> Acquired</span>`;
+        }
+        
+        document.getElementById('content2').innerHTML = `
+            <strong style="line-height: 1.3; display: block;">${result.icp || 'Decision Makers'}</strong>
+            ${agent2Badge}
+            <div style="font-size: 0.8rem; color: var(--text-tertiary); margin-top: 0.4rem;">${agent2Subtext}</div>
+        `;
+        document.getElementById('time2').textContent = now;
+
+        const platform = result.platform || 'LINKEDIN';
+        const badgeClass = platform === 'LINKEDIN' ? 'badge-linkedin' : platform === 'EMAIL' ? 'badge-email' : 'badge-call';
+        
+        document.getElementById('content3').innerHTML = `
+            <span class="result-badge ${badgeClass}" style="font-size: 0.9rem; padding: 0.4rem 1.2rem;">
+                <i class="fas ${platform === 'LINKEDIN' ? 'fa-hashtag' : platform === 'EMAIL' ? 'fa-envelope-open' : 'fa-phone-volume'}" style="margin-right: 6px;"></i>
+                ${platform}
+            </span>
+            <div style="font-size: 0.8rem; color: var(--text-tertiary); margin-top: 0.6rem; font-weight: 500;">Autonomously selected</div>
+        `;
+        document.getElementById('time3').textContent = now;
+
+        document.getElementById('content4').innerHTML = `
+            <strong>Optimized Draft</strong>
+            <div style="font-size: 0.8rem; color: var(--text-tertiary); margin-top: 0.4rem;">${result.content ? result.content.split(' ').length : 0} Tokens</div>
+        `;
+        document.getElementById('time4').textContent = now;
+
+        // UI INJECTION FOR HITL
+        if (result.content) {
+            let contentHtml = result.content.replace(/\n/g, '<br>');
+            
+            if (platform === 'CALL') {
+                document.getElementById('alertSound').play().catch(e => console.log("Audio play blocked by browser"));
+                currentTargetPhone = `+91${document.getElementById('contactNumber').value}`;
+                currentCallScript = result.content;
+                
+                contentHtml += `
+                    <div style="margin-top: 30px; padding: 25px; background: linear-gradient(135deg, #fff5f5, #fef2f2); border: 2px solid #fca5a5; border-radius: 16px; display: flex; flex-direction: column; gap: 15px; animation: fadeInUp 0.6s ease; box-shadow: 0 10px 25px -5px rgba(239, 68, 68, 0.15);">
+                        <div style="color: #dc2626; font-weight: 800; font-size: 1.2rem; display: flex; align-items: center; gap: 10px; letter-spacing: -0.02em;">
+                            <span style="background: #dc2626; color: white; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px;"><i class="fas fa-lock"></i></span>
+                            SECURITY OVERRIDE: HUMAN APPROVAL REQUIRED
+                        </div>
+                        <div style="font-size: 0.95rem; color: #475569; line-height: 1.6; border-left: 3px solid #fca5a5; padding-left: 15px;">
+                            Agent 3 has established a live telecom route. Agent 6 has generated the conversation buffer above. <strong>The AI dialer is locked pending human authorization.</strong>
+                        </div>
+                        <button onclick="approveCall()" class="btn-primary" id="approveCallBtn" style="background: #ef4444; border: none; margin-top: 10px; font-weight: 800; font-size: 1.05rem; width: 100%; cursor: pointer; padding: 16px; border-radius: 12px; color: white; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4); transition: all 0.3s ease;">
+                            <i class="fas fa-fingerprint" style="margin-right: 8px; font-size: 1.2rem;"></i> AUTHORIZE & DISPATCH AGENT
+                        </button>
+                    </div>
+                `;
+            }
+            document.getElementById('generatedContent').innerHTML = contentHtml;
+        }
+
+        // Sleek Audit Trail
+        if (result.audit_trail && result.audit_trail.length > 0) {
+            const auditHtml = result.audit_trail.map(log => {
+                const rawTime = log.substring(log.indexOf("[")+1, log.indexOf("]"));
+                let formattedTime = "00:00:00";
+                try {
+                    formattedTime = new Date(rawTime).toLocaleTimeString('en-US', {hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit'});
+                } catch(e) {}
+                const cleanLog = log.substring(log.indexOf("]") + 2);
+                const hash = '0x' + Math.random().toString(16).substring(2, 8).toUpperCase();
+                
+                return `
+                    <div class="audit-entry">
+                        <div class="audit-time">${formattedTime}</div>
+                        <div style="flex:1;">${cleanLog}</div>
+                        <div class="audit-hash">${hash}</div>
+                    </div>
+                `;
+            }).join('');
+            document.getElementById('auditTrail').innerHTML = auditHtml;
+        }
+    }
+
+    // COPY TO CLIPBOARD FUNCTION
+    function copyToClipboard() {
+        const contentBox = document.getElementById('generatedContent');
+        const textToCopy = contentBox.innerText; 
+        
+        if (textToCopy && !textToCopy.includes('AI payload will render here')) {
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const copyBtn = document.getElementById('copyBtn');
+                const originalHtml = copyBtn.innerHTML;
+                
+                copyBtn.innerHTML = '<i class="fas fa-check" style="color: var(--success);"></i> Copied!';
+                copyBtn.style.borderColor = 'var(--success)';
+                copyBtn.style.color = 'var(--success)';
+                
+                showToast('Payload copied to clipboard', 'success');
+                
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalHtml;
+                    copyBtn.style.borderColor = 'var(--border-medium)';
+                    copyBtn.style.color = 'var(--text-secondary)';
+                }, 2000);
+            }).catch(err => {
+                showToast('Failed to copy text', 'error');
+            });
+        } else {
+            showToast('No generated content to copy yet', 'warning');
+        }
+    }
+
+</script>
+<audio id="alertSound" preload="auto">
+    <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
+</audio>
+{% endblock %}

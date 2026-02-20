@@ -1,0 +1,974 @@
+{% extends "base.html" %}
+
+{% block title %}Contacts{% endblock %}
+{% block page_title %}contact intelligence{% endblock %}
+
+{% block content %}
+<style>
+    /* ===== PAGE LAYOUT ===== */
+    .contacts-container {
+        padding: 1rem 0;
+        animation: fadeInUp 0.6s ease;
+    }
+
+    /* ===== STATS CARDS ===== */
+    .stats-cards {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .stat-card {
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-soft);
+        border-radius: 20px;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1.2rem;
+        box-shadow: var(--shadow-sm);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; bottom: 0; width: 4px;
+        background: var(--primary);
+        opacity: 0;
+        transition: 0.3s;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-xl);
+        border-color: var(--border-medium);
+    }
+
+    .stat-card:hover::after { opacity: 1; }
+
+    .stat-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 16px;
+        background: var(--primary-soft);
+        color: var(--primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        transition: 0.3s;
+    }
+
+    .stat-card:hover .stat-icon {
+        background: var(--primary);
+        color: white;
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    .stat-info h4 {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        line-height: 1;
+        margin-bottom: 0.3rem;
+        letter-spacing: -0.03em;
+    }
+
+    .stat-info p {
+        font-size: 0.8rem;
+        color: var(--text-tertiary);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    /* ===== HEADER ACTIONS ===== */
+    .contacts-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .header-title h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 0.2rem;
+    }
+
+    .header-title p {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .btn-primary {
+        background: var(--gradient-primary);
+        color: white;
+        border: none;
+        padding: 0.8rem 1.8rem;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        box-shadow: 0 8px 20px -6px var(--primary);
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 30px -8px var(--primary);
+    }
+
+    .btn-secondary {
+        background: var(--bg-elevated);
+        color: var(--text-secondary);
+        border: 1px solid var(--border-medium);
+        padding: 0.8rem 1.5rem;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: var(--primary-soft);
+        transform: translateY(-2px);
+    }
+
+    /* ===== SEARCH & FILTER BAR ===== */
+    .search-bar {
+        background: var(--bg-elevated);
+        backdrop-filter: blur(12px);
+        border: 1px solid var(--border-soft);
+        border-radius: 18px;
+        padding: 1rem;
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .search-input-wrapper {
+        flex: 1;
+        position: relative;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 0.8rem 1rem 0.8rem 2.8rem;
+        border: 1px solid var(--border-soft);
+        border-radius: 12px;
+        background: var(--bg-surface);
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        transition: all 0.2s ease;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px var(--primary-soft);
+        background: var(--bg-card);
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-tertiary);
+        font-size: 1rem;
+    }
+
+    .filter-select {
+        padding: 0.8rem 1.2rem;
+        border: 1px solid var(--border-soft);
+        border-radius: 12px;
+        background: var(--bg-surface);
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        min-width: 160px;
+        transition: all 0.2s;
+    }
+
+    .filter-select:hover {
+        border-color: var(--primary-light);
+    }
+
+    /* ===== CONTACTS TABLE ===== */
+    .contacts-table-container {
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-soft);
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .contacts-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .contacts-table th {
+        text-align: left;
+        padding: 1.2rem 1.5rem;
+        background: var(--bg-surface);
+        color: var(--text-tertiary);
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 1px solid var(--border-soft);
+    }
+
+    .contacts-table td {
+        padding: 1.2rem 1.5rem;
+        border-bottom: 1px solid var(--border-soft);
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+        vertical-align: middle;
+    }
+
+    .contacts-table tr {
+        transition: background 0.2s ease;
+    }
+
+    .contacts-table tr:hover {
+        background: var(--primary-soft);
+    }
+
+    /* Table Cells */
+    .contact-name {
+        font-weight: 700;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+    }
+
+    .contact-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+        font-weight: 700;
+    }
+
+    .contact-score {
+        padding: 0.3rem 0.8rem;
+        border-radius: 30px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        display: inline-block;
+    }
+
+    .score-high { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+    .score-medium { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+    .score-low { background: rgba(239, 68, 68, 0.15); color: var(--error); }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.6rem;
+        justify-content: flex-end;
+    }
+
+    .btn-action {
+        width: 34px;
+        height: 34px;
+        border: 1px solid var(--border-soft);
+        background: var(--bg-surface);
+        border-radius: 10px;
+        color: var(--text-tertiary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-action:hover {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+        transform: translateY(-2px);
+    }
+
+    /* ===== PAGINATION ===== */
+    .pagination {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+        padding: 1.5rem;
+        border-top: 1px solid var(--border-soft);
+    }
+
+    .btn-page {
+        width: 36px;
+        height: 36px;
+        border: 1px solid var(--border-soft);
+        background: var(--bg-surface);
+        border-radius: 10px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.2s;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .btn-page:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .btn-page.active {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+
+    /* ===== MODAL (GLASS) ===== */
+    .modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 10000;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(8px);
+        animation: fadeIn 0.3s ease;
+    }
+
+    .modal.show { display: flex; }
+
+    .modal-content {
+        background: var(--bg-elevated);
+        border-radius: 24px;
+        padding: 2.5rem;
+        width: 90%;
+        max-width: 550px;
+        box-shadow: var(--shadow-2xl);
+        border: 1px solid var(--border-light);
+        animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        position: relative;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .modal-header h3 {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+    }
+
+    .close-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        border: 1px solid var(--border-soft);
+        background: var(--bg-surface);
+        color: var(--text-tertiary);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: 0.2s;
+    }
+
+    .close-btn:hover {
+        background: var(--error);
+        color: white;
+        border-color: var(--error);
+    }
+
+    /* Form Inputs for Add Modal */
+    .form-input {
+        width: 100%;
+        padding: 0.9rem 1rem;
+        border: 1px solid var(--border-soft);
+        border-radius: 12px;
+        background: var(--bg-surface);
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        transition: all 0.2s ease;
+    }
+    .form-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px var(--primary-soft);
+    }
+
+    /* Upload Area */
+    .upload-area {
+        border: 2px dashed var(--border-medium);
+        border-radius: 16px;
+        padding: 3rem 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: var(--bg-surface);
+    }
+
+    .upload-area:hover {
+        border-color: var(--primary);
+        background: var(--primary-soft);
+        transform: scale(1.01);
+    }
+
+    .upload-icon {
+        font-size: 3.5rem;
+        color: var(--primary);
+        margin-bottom: 1rem;
+        opacity: 0.8;
+    }
+
+    .upload-text {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .file-preview {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-soft);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    /* Animations */
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes scaleIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+</style>
+
+<div class="contacts-container">
+    
+    <div class="stats-cards">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-address-book"></i></div>
+            <div class="stat-info">
+                <h4 id="totalContacts">0</h4>
+                <p>total contacts</p>
+            </div>
+        </div>
+        <div class="stat-card success">
+            <div class="stat-icon"><i class="fas fa-bullseye"></i></div>
+            <div class="stat-info">
+                <h4 id="highScore">0</h4>
+                <p>high intent (80+)</p>
+            </div>
+        </div>
+        <div class="stat-card running">
+            <div class="stat-icon"><i class="fas fa-building"></i></div>
+            <div class="stat-info">
+                <h4 id="uniqueCompanies">0</h4>
+                <p>companies tracked</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-calendar-plus"></i></div>
+            <div class="stat-info">
+                <h4 id="newThisWeek">0</h4>
+                <p>new this week</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="contacts-header">
+        <div class="header-title">
+            <h2>Contact Database</h2>
+            <p>Manage and enrich your prospect lists in real-time.</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn-secondary" onclick="downloadTemplate()">
+                <i class="fas fa-file-csv"></i> Template
+            </button>
+            <button class="btn-primary" onclick="openUploadModal()">
+                <i class="fas fa-cloud-upload-alt"></i> Import CSV
+            </button>
+            <button class="btn-primary" onclick="openAddContactModal()">
+                <i class="fas fa-user-plus"></i> Add New
+            </button>
+        </div>
+    </div>
+
+    <div class="search-bar">
+        <div class="search-input-wrapper">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" class="search-input" id="searchInput" placeholder="Search by name, role, or company..." onkeyup="filterContacts()">
+        </div>
+        <select class="filter-select" id="scoreFilter" onchange="filterContacts()">
+            <option value="all">All Scores</option>
+            <option value="high">High Intent (80+)</option>
+            <option value="medium">Medium (50-79)</option>
+            <option value="low">Low (Below 50)</option>
+        </select>
+        <select class="filter-select" id="companyFilter" onchange="filterContacts()">
+            <option value="all">All Companies</option>
+        </select>
+    </div>
+
+    <div class="contacts-table-container">
+        <table class="contacts-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Company</th>
+                    <th>Role</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Lead Score</th>
+                    <th>Last Active</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="contactsTableBody">
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 4rem;">
+                        <div class="loading-spinner" style="margin: 0 auto;"></div>
+                        <div style="margin-top: 1rem; color: var(--text-tertiary);">Loading database...</div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div class="pagination" id="pagination"></div>
+    </div>
+
+</div>
+
+<div class="modal" id="uploadModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-cloud-upload-alt" style="color: var(--primary);"></i> Import Dataset</h3>
+            <button class="close-btn" onclick="closeUploadModal()"><i class="fas fa-times"></i></button>
+        </div>
+
+        <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+            <input type="file" id="fileInput" class="file-input" style="display:none;" accept=".csv" onchange="handleFileSelect(this.files)">
+            <i class="fas fa-file-import upload-icon"></i>
+            <div class="upload-text">Click to upload or drag & drop</div>
+            <div style="font-size: 0.85rem; color: var(--text-tertiary);">Supports CSV (Name, Email, Phone, Company, Role)</div>
+        </div>
+
+        <div id="filePreview" style="display: none;"></div>
+
+        <div id="uploadProgress" style="display: none; margin-top: 1.5rem;">
+            <div style="height: 6px; background: var(--bg-surface); border-radius: 3px; overflow: hidden;">
+                <div id="progressFill" style="height: 100%; width: 0%; background: var(--primary); transition: width 0.3s;"></div>
+            </div>
+            <div id="progressText" style="text-align: right; font-size: 0.8rem; color: var(--text-tertiary); margin-top: 5px;">0%</div>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <button class="btn-secondary" style="flex: 1; justify-content: center;" onclick="closeUploadModal()">Cancel</button>
+            <button class="btn-primary" style="flex: 1; justify-content: center;" onclick="processUpload()" id="uploadBtn" disabled>
+                Upload Contacts
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="addContactModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-user-plus" style="color: var(--primary);"></i> Add New Contact</h3>
+            <button class="close-btn" onclick="closeAddContactModal()"><i class="fas fa-times"></i></button>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 1.2rem;">
+            <input type="text" id="addName" class="form-input" placeholder="Full Name *" required>
+            <input type="email" id="addEmail" class="form-input" placeholder="Email Address *" required>
+            <input type="text" id="addPhone" class="form-input" placeholder="Phone Number (e.g., +91 9876543210)">
+            <input type="text" id="addCompany" class="form-input" placeholder="Company Name">
+            <input type="text" id="addRole" class="form-input" placeholder="Job Role / Title">
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <button class="btn-secondary" style="flex: 1; justify-content: center;" onclick="closeAddContactModal()">Cancel</button>
+            <button class="btn-primary" style="flex: 1; justify-content: center;" onclick="submitNewContact()">
+                Save Contact
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let allContacts = [];
+    let currentPage = 1;
+    const contactsPerPage = 8;
+    let companies = new Set();
+    let selectedFile = null;
+
+    // Load Real Data from SQLite Backend
+    async function loadContacts() {
+        try {
+            const response = await fetch('/api/contacts');
+            if (!response.ok) throw new Error('Failed to fetch from backend');
+            
+            const data = await response.json();
+            
+            if (data.contacts && data.contacts.length > 0) {
+                // Map the data dynamically
+                allContacts = data.contacts.map(c => {
+                    if (Array.isArray(c)) {
+                        return {
+                            id: c[0],
+                            name: c[1] || 'Unknown',
+                            email: c[2] || 'N/A',
+                            phone: c[3] || 'N/A',
+                            company: c[4] || 'N/A',
+                            role: c[5] || 'N/A',
+                            score: c[6] || 0,
+                            last: c[7] ? c[7].split(' ')[0] : 'Recently'
+                        };
+                    } else {
+                        return {
+                            id: c.id,
+                            name: c.name || 'Unknown',
+                            email: c.email || 'N/A',
+                            phone: c.phone || 'N/A',
+                            company: c.company || 'N/A',
+                            role: c.role || 'N/A',
+                            score: c.score || c.lead_score || 0,
+                            last: (c.last || c.last_contacted || 'Recently').split(' ')[0]
+                        };
+                    }
+                });
+            } else {
+                allContacts = [];
+            }
+            
+            // Extract unique companies for the dropdown filter
+            companies.clear();
+            allContacts.forEach(c => companies.add(c.company));
+            
+            updateCompanyFilter();
+            updateStats();
+            displayContacts();
+
+        } catch (error) {
+            console.error('Error fetching database contacts:', error);
+            document.getElementById('contactsTableBody').innerHTML = `
+                <tr>
+                    <td colspan="8" style="text-align:center; padding: 4rem; color: var(--error);">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
+                        Failed to connect to klodev.db database.<br>Please ensure the Flask backend is running.
+                    </td>
+                </tr>`;
+        }
+    }
+
+    function updateCompanyFilter() {
+        const select = document.getElementById('companyFilter');
+        let html = '<option value="all">All Companies</option>';
+        Array.from(companies).sort().forEach(c => {
+            html += `<option value="${c}">${c}</option>`;
+        });
+        select.innerHTML = html;
+    }
+
+    function updateStats() {
+        document.getElementById('totalContacts').innerText = allContacts.length;
+        document.getElementById('highScore').innerText = allContacts.filter(c => c.score >= 80).length;
+        document.getElementById('uniqueCompanies').innerText = companies.size;
+        document.getElementById('newThisWeek').innerText = Math.floor(allContacts.length * 0.2);
+    }
+
+    function displayContacts() {
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const scoreFilter = document.getElementById('scoreFilter').value;
+        const companyFilter = document.getElementById('companyFilter').value;
+
+        let filtered = allContacts.filter(c => {
+            const matchesSearch = c.name.toLowerCase().includes(search) || 
+                                  c.email.toLowerCase().includes(search) || 
+                                  c.role.toLowerCase().includes(search);
+            const matchesCompany = companyFilter === 'all' || c.company === companyFilter;
+            
+            let matchesScore = true;
+            if (scoreFilter === 'high') matchesScore = c.score >= 80;
+            if (scoreFilter === 'medium') matchesScore = c.score >= 50 && c.score < 80;
+            if (scoreFilter === 'low') matchesScore = c.score < 50;
+
+            return matchesSearch && matchesCompany && matchesScore;
+        });
+
+        const totalPages = Math.ceil(filtered.length / contactsPerPage);
+        const start = (currentPage - 1) * contactsPerPage;
+        const pageData = filtered.slice(start, start + contactsPerPage);
+
+        const tbody = document.getElementById('contactsTableBody');
+        
+        if (pageData.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 3rem; color: var(--text-tertiary);">No contacts match your criteria</td></tr>`;
+            document.getElementById('pagination').innerHTML = '';
+            return;
+        }
+
+        tbody.innerHTML = pageData.map(c => {
+            const initials = c.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || '?';
+            let scoreClass = 'score-low';
+            if (c.score >= 80) scoreClass = 'score-high';
+            else if (c.score >= 50) scoreClass = 'score-medium';
+
+            return `
+            <tr>
+                <td>
+                    <div class="contact-name">
+                        <div class="contact-avatar">${initials}</div>
+                        ${c.name}
+                    </div>
+                </td>
+                <td>${c.company}</td>
+                <td>${c.role}</td>
+                <td>${c.email}</td>
+                <td>${c.phone}</td>
+                <td><span class="contact-score ${scoreClass}">${c.score}</span></td>
+                <td>${c.last}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn-action" title="Edit" onclick="editContact(${c.id})"><i class="fas fa-pen"></i></button>
+                        <button class="btn-action" title="Email" onclick="emailContact('${c.email}')"><i class="fas fa-envelope"></i></button>
+                        <button class="btn-action" title="Delete" onclick="deleteContact(${c.id})"><i class="fas fa-trash"></i></button>
+                    </div>
+                </td>
+            </tr>
+            `;
+        }).join('');
+
+        renderPagination(totalPages);
+    }
+
+    function renderPagination(total) {
+        const pag = document.getElementById('pagination');
+        let html = '';
+        
+        if (total > 1) {
+            html += `<button class="btn-page" onclick="changePage(${Math.max(1, currentPage - 1)})"><i class="fas fa-chevron-left"></i></button>`;
+            
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(total, startPage + 4);
+            if(endPage - startPage < 4) {
+                startPage = Math.max(1, endPage - 4);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button class="btn-page ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+            }
+            html += `<button class="btn-page" onclick="changePage(${Math.min(total, currentPage + 1)})"><i class="fas fa-chevron-right"></i></button>`;
+        }
+        pag.innerHTML = html;
+    }
+
+    function changePage(p) { currentPage = p; displayContacts(); }
+    function filterContacts() { currentPage = 1; displayContacts(); }
+
+    /* =================================================================
+       CSV UPLOAD LOGIC (Real backend API call)
+       ================================================================= */
+    function openUploadModal() { document.getElementById('uploadModal').classList.add('show'); }
+    function closeUploadModal() { 
+        document.getElementById('uploadModal').classList.remove('show'); 
+        resetUpload();
+    }
+
+    function handleFileSelect(files) {
+        if (files.length > 0) {
+            selectedFile = files[0];
+            const size = (selectedFile.size / 1024).toFixed(2) + ' KB';
+            
+            document.getElementById('filePreview').style.display = 'flex';
+            document.getElementById('filePreview').innerHTML = `
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <i class="fas fa-file-csv" style="font-size:1.5rem; color:var(--primary);"></i>
+                    <div>
+                        <div style="font-weight:600; color:var(--text-primary);">${selectedFile.name}</div>
+                        <div style="font-size:0.8rem; color:var(--text-tertiary);">${size}</div>
+                    </div>
+                </div>
+                <i class="fas fa-check-circle" style="color:var(--success);"></i>
+            `;
+            document.getElementById('uploadBtn').disabled = false;
+        }
+    }
+
+    async function processUpload() {
+        if (!selectedFile) return;
+
+        const btn = document.getElementById('uploadBtn');
+        const prog = document.getElementById('uploadProgress');
+        const fill = document.getElementById('progressFill');
+        const text = document.getElementById('progressText');
+
+        btn.disabled = true;
+        prog.style.display = 'block';
+
+        // Fake visual progress while waiting for fetch
+        let width = 0;
+        const interval = setInterval(() => {
+            if (width < 90) width += 10;
+            fill.style.width = width + '%';
+            text.innerText = width + '% processing...';
+        }, 200);
+
+        try {
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            const response = await fetch('/api/contacts/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            clearInterval(interval);
+            fill.style.width = '100%';
+            text.innerText = '100% complete';
+
+            setTimeout(() => {
+                closeUploadModal();
+                alert(result.message || "CSV Imported successfully!");
+                loadContacts(); // Refresh table from DB
+            }, 500);
+
+        } catch (error) {
+            clearInterval(interval);
+            alert("Upload failed: " + error.message);
+            resetUpload();
+        }
+    }
+
+    function resetUpload() {
+        selectedFile = null;
+        document.getElementById('filePreview').style.display = 'none';
+        document.getElementById('uploadProgress').style.display = 'none';
+        document.getElementById('uploadBtn').disabled = true;
+    }
+
+    /* =================================================================
+       ADD SINGLE CONTACT LOGIC (Real backend API call)
+       ================================================================= */
+    function openAddContactModal() {
+        document.getElementById('addContactModal').classList.add('show');
+    }
+
+    function closeAddContactModal() {
+        document.getElementById('addContactModal').classList.remove('show');
+        // Clear inputs
+        document.getElementById('addName').value = '';
+        document.getElementById('addEmail').value = '';
+        document.getElementById('addPhone').value = '';
+        document.getElementById('addCompany').value = '';
+        document.getElementById('addRole').value = '';
+    }
+
+    async function submitNewContact() {
+        const payload = {
+            name: document.getElementById('addName').value,
+            email: document.getElementById('addEmail').value,
+            phone: document.getElementById('addPhone').value,
+            company: document.getElementById('addCompany').value,
+            role: document.getElementById('addRole').value
+        };
+
+        if (!payload.name || !payload.email) {
+            alert("Name and Email are required!");
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/contacts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                closeAddContactModal();
+                alert("Contact added to database successfully!");
+                loadContacts(); // Refresh table from DB
+            } else {
+                alert("Failed to add contact: " + result.message);
+            }
+        } catch (error) {
+            alert("Error: " + error.message);
+        }
+    }
+
+    // Actions
+    function deleteContact(id) {
+        if(confirm('Delete contact? Note: For safety, this currently only hides it from the UI until page refresh.')) {
+            allContacts = allContacts.filter(c => c.id !== id);
+            displayContacts();
+            updateStats();
+        }
+    }
+
+    function editContact(id) { alert(`Edit contact ID: ${id}`); }
+
+    function emailContact(email) {
+        window.location.href = `mailto:${email}`;
+    }
+
+    function downloadTemplate() {
+        // Create a simple CSV template and trigger download
+        const csvContent = "Name,Email,Phone,Company,Role\nJohn Doe,john@example.com,+919876543210,Acme Corp,Manager";
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", "klodev_contacts_template.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // Init Data Fetch on Load
+    document.addEventListener('DOMContentLoaded', loadContacts);
+</script>
+{% endblock %}

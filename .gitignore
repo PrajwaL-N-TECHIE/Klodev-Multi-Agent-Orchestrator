@@ -1,0 +1,11 @@
+# Environments
+fresh_env/
+venv/
+__pycache__/
+
+# API Keys and Secrets
+.env
+
+# (Optional) If you don't want to push the database, uncomment the line below. 
+# But since this is a demo, you might want to push klodev.db so judges can clone and run it!
+ *.db

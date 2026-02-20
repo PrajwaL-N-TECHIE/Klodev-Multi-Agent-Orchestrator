@@ -1,0 +1,618 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics{% endblock %}
+{% block page_title %}neural insights{% endblock %}
+
+{% block content %}
+<style>
+    /* ===== PAGE LAYOUT ===== */
+    .analytics-container {
+        padding: 1rem 0;
+        animation: fadeInUp 0.6s ease;
+    }
+
+    /* ===== DATE RANGE SELECTOR ===== */
+    .date-range-wrapper {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 2rem;
+    }
+
+    .date-range {
+        display: flex;
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-soft);
+        border-radius: 50px;
+        padding: 0.3rem;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .date-btn {
+        padding: 0.5rem 1.2rem;
+        border: none;
+        border-radius: 40px;
+        background: transparent;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .date-btn:hover {
+        color: var(--primary);
+    }
+
+    .date-btn.active {
+        background: var(--gradient-primary);
+        color: white;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    /* ===== KPI CARDS (NEON GLASS) ===== */
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .kpi-card {
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-soft);
+        border-radius: 24px;
+        padding: 1.8rem;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .kpi-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-xl);
+        border-color: var(--border-medium);
+    }
+
+    /* Glowing accent line */
+    .kpi-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; width: 4px; height: 100%;
+        background: var(--primary);
+        opacity: 0.5;
+        transition: 0.3s;
+    }
+
+    .kpi-card:hover::before {
+        opacity: 1;
+        width: 6px;
+    }
+
+    .kpi-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+
+    .kpi-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        transition: 0.3s;
+    }
+
+    .kpi-card:hover .kpi-icon {
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    .icon-email { background: rgba(37, 99, 235, 0.1); color: var(--primary); }
+    .icon-call { background: rgba(124, 58, 237, 0.1); color: var(--secondary); }
+    .icon-linkedin { background: rgba(6, 182, 212, 0.1); color: var(--accent); }
+    .icon-engagement { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+
+    .kpi-trend {
+        padding: 0.25rem 0.6rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .trend-up { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+    .trend-down { background: rgba(239, 68, 68, 0.15); color: var(--error); }
+
+    .kpi-value {
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        line-height: 1;
+        margin-bottom: 0.4rem;
+        letter-spacing: -0.03em;
+    }
+
+    .kpi-label {
+        font-size: 0.8rem;
+        color: var(--text-tertiary);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .kpi-sub {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin-top: 0.8rem;
+        padding-top: 0.8rem;
+        border-top: 1px dashed var(--border-soft);
+        display: flex;
+        justify-content: space-between;
+    }
+
+    /* ===== CHARTS ROW ===== */
+    .charts-row {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .chart-card {
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-soft);
+        border-radius: 24px;
+        padding: 2rem;
+        box-shadow: var(--shadow-md);
+        height: 100%;
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .card-header h3 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .chart-filter {
+        padding: 0.4rem 1rem;
+        border: 1px solid var(--border-soft);
+        border-radius: 12px;
+        background: var(--bg-surface);
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .chart-filter:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
+
+    /* ===== METRICS GRID ===== */
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .metric-card {
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-soft);
+        border-radius: 20px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        transition: 0.3s;
+    }
+
+    .metric-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+        border-color: var(--primary-light);
+    }
+
+    .metric-header {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        margin-bottom: 1rem;
+        color: var(--text-secondary);
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .metric-header i {
+        color: var(--primary);
+        font-size: 1.1rem;
+    }
+
+    .metric-value-lg {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .metric-detail {
+        font-size: 0.9rem;
+        color: var(--text-tertiary);
+        margin-bottom: 1rem;
+    }
+
+    .progress-track {
+        height: 6px;
+        background: var(--bg-surface);
+        border-radius: 10px;
+        overflow: hidden;
+        margin-top: 0.5rem;
+    }
+
+    .progress-fill {
+        height: 100%;
+        border-radius: 10px;
+        transition: width 1s ease-out;
+    }
+
+    /* Channel breakdown specific */
+    .channel-row {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 0.8rem;
+    }
+    .channel-label { width: 70px; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); }
+    .channel-val { font-size: 0.85rem; font-weight: 700; color: var(--text-primary); min-width: 30px; text-align: right; }
+
+    /* ===== TABLE SECTION ===== */
+    .table-section {
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-soft);
+        border-radius: 24px;
+        padding: 2rem;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .performance-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+    }
+
+    .performance-table th {
+        text-align: left;
+        padding: 1rem;
+        color: var(--text-tertiary);
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        border-bottom: 1px solid var(--border-soft);
+    }
+
+    .performance-table td {
+        padding: 1.2rem 1rem;
+        border-bottom: 1px solid var(--border-soft);
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+        font-weight: 500;
+    }
+
+    .performance-table tr:hover td {
+        background: var(--bg-surface);
+        color: var(--text-primary);
+    }
+
+    .badge-pill {
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .pill-email { background: rgba(37, 99, 235, 0.1); color: var(--primary); }
+    .pill-call { background: rgba(124, 58, 237, 0.1); color: var(--secondary); }
+    .pill-linkedin { background: rgba(6, 182, 212, 0.1); color: var(--accent); }
+
+    /* Animations */
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    
+    @media (max-width: 1024px) {
+        .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+        .charts-row { grid-template-columns: 1fr; }
+        .metrics-grid { grid-template-columns: 1fr; }
+    }
+</style>
+
+<div class="analytics-container">
+    
+    <div class="date-range-wrapper">
+        <div class="date-range">
+            <button class="date-btn" onclick="changeDateRange('7d')">7D</button>
+            <button class="date-btn active" onclick="changeDateRange('30d')">30D</button>
+            <button class="date-btn" onclick="changeDateRange('3m')">3M</button>
+            <button class="date-btn" onclick="changeDateRange('1y')">1Y</button>
+        </div>
+    </div>
+
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <div class="kpi-icon icon-email"><i class="fas fa-envelope"></i></div>
+                <div class="kpi-trend trend-up"><i class="fas fa-arrow-up"></i> 12.5%</div>
+            </div>
+            <div class="kpi-value" id="totalEmails">1,247</div>
+            <div class="kpi-label">Emails Sent</div>
+            <div class="kpi-sub">
+                <span>Open Rate</span>
+                <span style="font-weight: 700; color: var(--text-primary);">68.5%</span>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <div class="kpi-icon icon-call"><i class="fas fa-phone-alt"></i></div>
+                <div class="kpi-trend trend-up"><i class="fas fa-arrow-up"></i> 8.2%</div>
+            </div>
+            <div class="kpi-value" id="totalCalls">48</div>
+            <div class="kpi-label">Calls Made</div>
+            <div class="kpi-sub">
+                <span>Connect Rate</span>
+                <span style="font-weight: 700; color: var(--text-primary);">42.3%</span>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <div class="kpi-icon icon-linkedin"><i class="fab fa-linkedin-in"></i></div>
+                <div class="kpi-trend trend-up"><i class="fas fa-arrow-up"></i> 23.1%</div>
+            </div>
+            <div class="kpi-value" id="totalLinkedin">156</div>
+            <div class="kpi-label">LinkedIn Posts</div>
+            <div class="kpi-sub">
+                <span>Engagement</span>
+                <span style="font-weight: 700; color: var(--text-primary);">18.4%</span>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <div class="kpi-icon icon-engagement"><i class="fas fa-bullseye"></i></div>
+                <div class="kpi-trend trend-up"><i class="fas fa-arrow-up"></i> 5.3%</div>
+            </div>
+            <div class="kpi-value" id="totalConversions">89</div>
+            <div class="kpi-label">Conversions</div>
+            <div class="kpi-sub">
+                <span>Avg. Rate</span>
+                <span style="font-weight: 700; color: var(--text-primary);">12.8%</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="charts-row">
+        <div class="chart-card">
+            <div class="card-header">
+                <h3>Engagement Trends</h3>
+                <select class="chart-filter" id="engagementFilter" onchange="updateEngagementChart()">
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                </select>
+            </div>
+            <div class="chart-container">
+                <canvas id="engagementChart"></canvas>
+            </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <div class="metric-card">
+                <div class="metric-header">
+                    <i class="fas fa-clock"></i>
+                    <span>Best Time to Send</span>
+                </div>
+                <div class="metric-value-lg">10:30 AM</div>
+                <div class="metric-detail">Tuesday · 85% higher open rate</div>
+                <div class="progress-track">
+                    <div class="progress-fill" style="width: 85%; background: var(--gradient-primary);"></div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <i class="fas fa-magic"></i>
+                    <span>Top Subject Line</span>
+                </div>
+                <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem;">
+                    "Transform your enterprise with AI"
+                </div>
+                <div class="metric-detail">32% Open Rate · 12% Click Rate</div>
+                <div class="progress-track">
+                    <div class="progress-fill" style="width: 32%; background: var(--secondary);"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-header"><i class="fas fa-chart-pie"></i> Channel ROI</div>
+            <div style="margin-top: 1.5rem;">
+                <div class="channel-row">
+                    <div class="channel-label">Email</div>
+                    <div class="progress-track" style="flex:1; margin:0;">
+                        <div class="progress-fill" style="width: 68%; background: var(--primary);"></div>
+                    </div>
+                    <div class="channel-val">68%</div>
+                </div>
+                <div class="channel-row">
+                    <div class="channel-label">Call</div>
+                    <div class="progress-track" style="flex:1; margin:0;">
+                        <div class="progress-fill" style="width: 42%; background: var(--secondary);"></div>
+                    </div>
+                    <div class="channel-val">42%</div>
+                </div>
+                <div class="channel-row">
+                    <div class="channel-label">LinkedIn</div>
+                    <div class="progress-track" style="flex:1; margin:0;">
+                        <div class="progress-fill" style="width: 23%; background: var(--accent);"></div>
+                    </div>
+                    <div class="channel-val">23%</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-card" style="grid-column: span 2;">
+            <div class="card-header">
+                <h3>Detailed Performance</h3>
+                <button class="chart-filter" onclick="exportData()">
+                    <i class="fas fa-download"></i> Export
+                </button>
+            </div>
+            <table class="performance-table">
+                <thead>
+                    <tr>
+                        <th>Channel</th>
+                        <th>Sent</th>
+                        <th>Opened</th>
+                        <th>Replied</th>
+                        <th>Converted</th>
+                        <th>Trend</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="badge-pill pill-email">Email</span></td>
+                        <td>1,247</td>
+                        <td>854</td>
+                        <td>312</td>
+                        <td>89</td>
+                        <td style="color: var(--success);">+8.2%</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge-pill pill-call">Call</span></td>
+                        <td>48</td>
+                        <td>42</td>
+                        <td>18</td>
+                        <td>6</td>
+                        <td style="color: var(--success);">+4.3%</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge-pill pill-linkedin">LinkedIn</span></td>
+                        <td>156</td>
+                        <td>89</td>
+                        <td>36</td>
+                        <td>12</td>
+                        <td style="color: var(--success);">+12.1%</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    let engagementChart;
+
+    // Initialize Charts
+    function initCharts() {
+        const ctx = document.getElementById('engagementChart').getContext('2d');
+        
+        // Gradient fill for chart
+        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+        gradient.addColorStop(0, 'rgba(37, 99, 235, 0.2)');
+        gradient.addColorStop(1, 'rgba(37, 99, 235, 0)');
+
+        engagementChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                datasets: [{
+                    label: 'Engagement Score',
+                    data: [65, 72, 68, 84],
+                    borderColor: '#2563eb',
+                    backgroundColor: gradient,
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: '#2563eb',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        titleColor: '#fff',
+                        bodyColor: '#cbd5e1',
+                        padding: 10,
+                        cornerRadius: 8,
+                        displayColors: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(226, 232, 240, 0.5)' },
+                        ticks: { color: '#64748b' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#64748b' }
+                    }
+                }
+            }
+        });
+    }
+
+    function changeDateRange(range) {
+        document.querySelectorAll('.date-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+        showToast(`Filtering data for last ${range}...`, 'info');
+        
+        // Simulate data refresh
+        setTimeout(() => {
+            showToast('Analytics updated', 'success');
+        }, 800);
+    }
+
+    function exportData() {
+        showToast('Exporting report as CSV...', 'info');
+    }
+
+    function updateEngagementChart() {
+        showToast('Updating chart view...', 'info');
+    }
+
+    // Init
+    document.addEventListener('DOMContentLoaded', initCharts);
+</script>
+{% endblock %}

@@ -1,0 +1,488 @@
+{% extends "base.html" %}
+
+{% block title %}Campaigns{% endblock %}
+{% block page_title %}campaign management{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        /* OG Blue & White Theme */
+        --primary-blue: #2563eb;
+        --primary-dark: #1d4ed8;
+        --accent-cyan: #06b6d4;
+        --blue-glow: rgba(37, 99, 235, 0.4);
+        --bg-glass: rgba(255, 255, 255, 0.7);
+        --text-dark: #0f172a;
+        --text-light: #64748b;
+    }
+
+    /* ===== PAGE LAYOUT ===== */
+    .campaigns-container {
+        padding: 1rem 0;
+        animation: fadeInUp 0.6s ease;
+    }
+
+    /* ===== HEADER & ACTIONS ===== */
+    .campaigns-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .header-title h2 {
+        font-size: 1.8rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--primary-blue), var(--accent-cyan));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0.5rem;
+    }
+
+    .header-title p {
+        color: var(--text-light);
+        font-size: 0.95rem;
+    }
+
+    .btn-create {
+        background: linear-gradient(135deg, var(--primary-blue), var(--accent-cyan));
+        color: white;
+        border: none;
+        padding: 0.9rem 2rem;
+        border-radius: 50px;
+        font-weight: 700;
+        font-size: 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        box-shadow: 0 10px 25px -5px var(--blue-glow);
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .btn-create:hover {
+        transform: translateY(-4px) scale(1.02);
+        box-shadow: 0 20px 35px -8px var(--blue-glow);
+    }
+
+    .btn-create i {
+        transition: transform 0.3s;
+    }
+
+    .btn-create:hover i {
+        transform: rotate(90deg);
+    }
+
+    /* ===== GLASS FILTERS ===== */
+    .campaign-filters {
+        display: flex;
+        gap: 1.5rem;
+        margin-bottom: 3rem;
+        background: var(--bg-glass);
+        backdrop-filter: blur(12px);
+        padding: 1rem 1.5rem;
+        border-radius: 20px;
+        border: 1px solid rgba(37, 99, 235, 0.1);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+    }
+
+    .filter-wrapper {
+        position: relative;
+    }
+
+    .filter-select {
+        padding: 0.7rem 2.5rem 0.7rem 1.2rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        background: white;
+        color: var(--text-dark);
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        appearance: none;
+        transition: all 0.2s;
+        min-width: 160px;
+    }
+
+    .filter-select:hover {
+        border-color: var(--accent-cyan);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .filter-select:focus {
+        outline: none;
+        border-color: var(--primary-blue);
+    }
+
+    .filter-icon {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-light);
+        pointer-events: none;
+        font-size: 0.8rem;
+    }
+
+    /* ===== CAMPAIGN GRID ===== */
+    .campaigns-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+        gap: 2rem;
+    }
+
+    .campaign-card {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 24px;
+        padding: 1.8rem;
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .campaign-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 4px;
+        background: linear-gradient(90deg, var(--primary-blue), var(--accent-cyan));
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 0.4s ease;
+    }
+
+    .campaign-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(37, 99, 235, 0.1);
+        border-color: rgba(37, 99, 235, 0.2);
+    }
+
+    .campaign-card:hover::before {
+        transform: scaleX(1);
+    }
+
+    /* Card Header */
+    .card-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1.2rem;
+    }
+
+    .campaign-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        color: white;
+        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    }
+
+    .type-email { background: linear-gradient(135deg, #2563eb, #3b82f6); }
+    .type-linkedin { background: linear-gradient(135deg, #0284c7, #06b6d4); }
+    .type-call { background: linear-gradient(135deg, #4f46e5, #6366f1); }
+
+    .status-badge {
+        padding: 0.35rem 0.85rem;
+        border-radius: 30px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .status-active { background: #dcfce7; color: #166534; }
+    .status-draft { background: #fef9c3; color: #854d0e; }
+    .status-paused { background: #fee2e2; color: #991b1b; }
+    .status-completed { background: #f1f5f9; color: #475569; }
+
+    /* Card Content */
+    .campaign-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--text-dark);
+        margin-bottom: 1.5rem;
+    }
+
+    /* Progress Bar */
+    .progress-wrapper {
+        margin-bottom: 1.5rem;
+    }
+
+    .progress-info {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.85rem;
+        color: var(--text-light);
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+    }
+
+    .progress-track {
+        height: 8px;
+        background: #f1f5f9;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary-blue), var(--accent-cyan));
+        border-radius: 10px;
+        transition: width 1.2s ease-out;
+    }
+
+    /* Stats Grid */
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        padding-top: 1.2rem;
+        border-top: 1px dashed #e2e8f0;
+        margin-bottom: 1.5rem;
+    }
+
+    .stat-box {
+        text-align: center;
+    }
+
+    .stat-val {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: var(--text-dark);
+        display: block;
+    }
+
+    .stat-lbl {
+        font-size: 0.75rem;
+        color: var(--text-light);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-top: 4px;
+        display: block;
+    }
+
+    /* Action Buttons */
+    .card-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.6rem;
+    }
+
+    .btn-action {
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        background: transparent;
+        color: var(--text-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: 0.2s ease;
+    }
+
+    .btn-action:hover {
+        border-color: var(--primary-blue);
+        color: var(--primary-blue);
+        background: #eff6ff;
+        transform: translateY(-2px);
+    }
+
+    /* Empty State */
+    .empty-state {
+        grid-column: 1 / -1;
+        background: white;
+        border-radius: 24px;
+        padding: 5rem 2rem;
+        text-align: center;
+        border: 2px dashed #e2e8f0;
+    }
+
+    .empty-icon {
+        font-size: 4rem;
+        color: #e2e8f0;
+        margin-bottom: 1.5rem;
+        animation: pulse 3s infinite;
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); opacity: 0.5; }
+        50% { transform: scale(1.1); opacity: 1; }
+        100% { transform: scale(1); opacity: 0.5; }
+    }
+
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+<div class="campaigns-container">
+    
+    <div class="campaigns-header">
+        <div class="header-title">
+            <h2>Active Campaigns</h2>
+            <p>Manage and monitor your AI-driven outreach workflows.</p>
+        </div>
+        <button class="btn-create" onclick="redirectToOrchestrator()">
+            <i class="fas fa-plus"></i> New Campaign
+        </button>
+    </div>
+
+    <div class="campaign-filters">
+        <div class="filter-wrapper">
+            <select class="filter-select" id="typeFilter" onchange="filterCampaigns()">
+                <option value="all">All Channels</option>
+                <option value="email">Email</option>
+                <option value="linkedin">LinkedIn</option>
+                <option value="call">Voice Call</option>
+            </select>
+            <i class="fas fa-chevron-down filter-icon"></i>
+        </div>
+        <div class="filter-wrapper">
+            <select class="filter-select" id="statusFilter" onchange="filterCampaigns()">
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="draft">Draft</option>
+                <option value="paused">Paused</option>
+                <option value="completed">Completed</option>
+            </select>
+            <i class="fas fa-chevron-down filter-icon"></i>
+        </div>
+    </div>
+
+    <div class="campaigns-grid" id="campaignsGrid">
+        <div style="grid-column: 1/-1; text-align: center; padding: 4rem;">
+            <i class="fas fa-circle-notch fa-spin" style="font-size: 2rem; color: var(--primary-blue);"></i>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    let allCampaigns = [];
+
+    // Redirect to Orchestrate Agents page
+    function redirectToOrchestrator() {
+        // Simulating the redirect to the workspace/orchestrator
+        window.location.href = '/workspace'; 
+    }
+
+    // Load campaigns from API (Simulated)
+    async function loadCampaigns() {
+        const grid = document.getElementById('campaignsGrid');
+        
+        setTimeout(() => {
+            // Mock Data
+            allCampaigns = [
+                {id: 1, name: "Enterprise SaaS Outreach Q1", type: "email", status: "active", progress: 78, sent: 450, opened: 312, responded: 89},
+                {id: 2, name: "CTO Thought Leadership", type: "linkedin", status: "active", progress: 42, sent: 89, opened: 67, responded: 23},
+                {id: 3, name: "High-Value Prospects Follow-up", type: "call", status: "draft", progress: 0, sent: 0, opened: 0, responded: 0},
+                {id: 4, name: "AI Webinar Invitations", type: "email", status: "completed", progress: 100, sent: 1200, opened: 890, responded: 450},
+                {id: 5, name: "Beta Tester Recruitment", type: "linkedin", status: "paused", progress: 25, sent: 40, opened: 15, responded: 5}
+            ];
+            
+            displayCampaigns(allCampaigns);
+        }, 800);
+    }
+
+    // Display Function
+    function displayCampaigns(campaigns) {
+        const grid = document.getElementById('campaignsGrid');
+        
+        if (!campaigns || campaigns.length === 0) {
+            grid.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-rocket empty-icon"></i>
+                    <h3 style="font-size: 1.2rem; font-weight: 700; color: #334155;">No campaigns found</h3>
+                    <p style="color: #64748b; margin-bottom: 1.5rem;">Launch your first AI-driven workflow to see results here.</p>
+                    <button class="btn-create" style="margin: 0 auto;" onclick="redirectToOrchestrator()">
+                        Create Campaign
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        grid.innerHTML = campaigns.map((c, i) => {
+            const icon = c.type === 'email' ? 'fa-envelope' : c.type === 'call' ? 'fa-phone' : 'fa-linkedin-in';
+            
+            return `
+            <div class="campaign-card" style="animation: fadeInUp 0.5s ease forwards ${i * 0.1}s; opacity: 0; transform: translateY(20px);">
+                <div class="card-top">
+                    <div class="campaign-icon type-${c.type}">
+                        <i class="fas ${icon}"></i>
+                    </div>
+                    <span class="status-badge status-${c.status}">${c.status}</span>
+                </div>
+                
+                <h3 class="campaign-title">${c.name}</h3>
+                
+                <div class="progress-wrapper">
+                    <div class="progress-info">
+                        <span>Progress</span>
+                        <span>${c.progress}%</span>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-fill" style="width: ${c.progress}%"></div>
+                    </div>
+                </div>
+                
+                <div class="stats-row">
+                    <div class="stat-box">
+                        <span class="stat-val">${formatNumber(c.sent)}</span>
+                        <span class="stat-lbl">Sent</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-val">${formatNumber(c.opened)}</span>
+                        <span class="stat-lbl">Opened</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-val">${formatNumber(c.responded)}</span>
+                        <span class="stat-lbl">Replies</span>
+                    </div>
+                </div>
+                
+                <div class="card-actions">
+                    <button class="btn-action" title="Edit" onclick="editCampaign(${c.id})"><i class="fas fa-pen"></i></button>
+                    <button class="btn-action" title="${c.status === 'active' ? 'Pause' : 'Resume'}" onclick="toggleCampaign(${c.id})">
+                        <i class="fas ${c.status === 'active' ? 'fa-pause' : 'fa-play'}"></i>
+                    </button>
+                    <button class="btn-action" title="Analytics" onclick="viewAnalytics(${c.id})"><i class="fas fa-chart-line"></i></button>
+                </div>
+            </div>
+            `;
+        }).join('');
+    }
+
+    // Filter Logic
+    function filterCampaigns() {
+        const type = document.getElementById('typeFilter').value;
+        const status = document.getElementById('statusFilter').value;
+        
+        const filtered = allCampaigns.filter(c => {
+            return (type === 'all' || c.type === type) && 
+                   (status === 'all' || c.status === status);
+        });
+        
+        displayCampaigns(filtered);
+    }
+
+    // Utils
+    function formatNumber(num) {
+        return num > 999 ? (num/1000).toFixed(1) + 'k' : num;
+    }
+
+    function editCampaign(id) { showToast(`Editing campaign #${id}`, 'info'); }
+    function toggleCampaign(id) { showToast(`Status toggled for #${id}`, 'success'); }
+    function viewAnalytics(id) { window.location.href = `/analytics?id=${id}`; }
+
+    // Init
+    document.addEventListener('DOMContentLoaded', loadCampaigns);
+</script>
+{% endblock %}
